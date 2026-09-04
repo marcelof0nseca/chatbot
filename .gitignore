@@ -1,0 +1,56 @@
+### Maven ###
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+
+### Eclipse / STS ###
+.classpath
+.project
+.settings/
+.apt_generated/
+.apt_generated_test/
+.factorypath
+.springBeans
+.sts4-cache/
+bin/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Banco H2 em arquivo (dados locais, nao versionar) ###
+data/
+*.mv.db
+*.trace.db
+*.lock.db
+
+### Logs e temporarios ###
+*.log
+logs/
+*.tmp
+*.bak
+
+### SO ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Spring Initializr ###
+HELP.md
