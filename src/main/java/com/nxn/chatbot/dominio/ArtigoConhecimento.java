@@ -129,4 +129,14 @@ public class ArtigoConhecimento {
 
         return (double) intersecao.size() / uniao.size();
     }
+    
+    public boolean disponivelPara(TipoCliente tipoCliente) {
+        if (tipoCliente == null) {
+            throw new IllegalArgumentException(
+                "O tipo de cliente é obrigatório."
+            );
+        }
+
+        return publico || tipoCliente == TipoCliente.INTERNO;
+    }
 }
