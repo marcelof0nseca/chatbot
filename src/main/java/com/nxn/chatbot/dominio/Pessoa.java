@@ -1,6 +1,7 @@
 package com.nxn.chatbot.dominio;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public abstract class Pessoa {
 
@@ -9,7 +10,7 @@ public abstract class Pessoa {
     private final LocalDateTime dataCadastro;
 
     protected Pessoa(Long id, String nome) {
-        this.id = id; 
+        this.id = id;
         this.nome = validarNome(nome);
         this.dataCadastro = LocalDateTime.now();
     }
@@ -50,5 +51,27 @@ public abstract class Pessoa {
             throw new IllegalArgumentException("E-mail inválido: deve conter um único '@' com texto antes e depois.");
         }
         return e;
+    }
+
+    /** Identidade pela chave, e não pelos atributos, que podem mudar. */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Pessoa outra) || id == null) {
+            return false;
+        }
+        return getClass() == o.getClass() && id.equals(outra.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" + nome + "}";
     }
 }

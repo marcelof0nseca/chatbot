@@ -1,7 +1,10 @@
 package com.nxn.chatbot.dominio;
 
 import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -10,11 +13,13 @@ import java.util.Set;
 
 public class ArtigoConhecimento {
 
-    private final String pergunta;
-    private final List<String> variacoes;
-    private final String resposta;
+    private String pergunta;
+    private List<String> variacoes;
+    private String resposta;
     private final String categoria;
     private final boolean publico;
+    private boolean ativo;
+    private LocalDateTime atualizadoEm;
 
     public ArtigoConhecimento(
             String pergunta,
@@ -23,9 +28,19 @@ public class ArtigoConhecimento {
             String categoria,
             boolean publico) {
 
+        this.categoria = validarTexto(categoria, "Categoria");
+        this.publico = publico;
+        this.ativo = true;
+        atualizar(pergunta, resposta, variacoes);
+    }
+
+    /**
+     * O gestor corrige o conteúdo pelo painel, sem desenvolvedor (Épico 2).
+     * Toda alteração carimba a data: conteúdo velho é o que faz o bot errar.
+     */
+    public final void atualizar(String pergunta, String resposta, List<String> variacoes) {
         this.pergunta = validarTexto(pergunta, "Pergunta");
         this.resposta = validarTexto(resposta, "Resposta");
-        this.categoria = validarTexto(categoria, "Categoria");
 
         Objects.requireNonNull(
             variacoes, "A lista de variações é obrigatória."
@@ -36,7 +51,24 @@ public class ArtigoConhecimento {
         }
 
         this.variacoes = List.copyOf(variacoes);
-        this.publico = publico;
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    public void adicionarVariacao(String variacao) {
+        validarTexto(variacao, "Variação");
+        List<String> novas = new ArrayList<>(variacoes);
+        novas.add(variacao);
+        this.variacoes = List.copyOf(novas);
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    /** Desativar em vez de apagar preserva o vínculo com mensagens antigas. */
+    public void ativar() {
+        this.ativo = true;
+    }
+
+    public void desativar() {
+        this.ativo = false;
     }
 
     private static String validarTexto(String texto, String campo) {
@@ -54,7 +86,7 @@ public class ArtigoConhecimento {
     }
 
     public List<String> getVariacoes() {
-        return variacoes;
+        return Collections.unmodifiableList(variacoes);
     }
 
     public String getResposta() {
@@ -67,6 +99,14 @@ public class ArtigoConhecimento {
 
     public boolean isPublico() {
         return publico;
+    }
+
+    public boolean estaAtivo() {
+        return ativo;
+    }
+
+    public LocalDateTime getAtualizadoEm() {
+        return atualizadoEm;
     }
 
     public double pontuarPara(String texto) {
@@ -129,12 +169,17 @@ public class ArtigoConhecimento {
 
         return (double) intersecao.size() / uniao.size();
     }
-    
+
+    /** Artigo desativado nao responde; artigo interno nao chega a cliente externo. */
     public boolean disponivelPara(TipoCliente tipoCliente) {
         if (tipoCliente == null) {
             throw new IllegalArgumentException(
                 "O tipo de cliente é obrigatório."
             );
+        }
+
+        if (!ativo) {
+            return false;
         }
 
         return publico || tipoCliente == TipoCliente.INTERNO;
