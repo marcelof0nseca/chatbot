@@ -29,6 +29,9 @@ A aplicação sobe em `http://localhost:8080`.
 | Endereço | O que é |
 |---|---|
 | `GET /api/health` | Verificação de que o servidor subiu. Responde `ok` |
+| `GET /api/fila` | Fila de atendimento: quem aguarda primeiro, o caso mais antigo no topo |
+| `GET /api/fila/resumo` | Indicadores do dia: na fila, em atendimento, espera média e taxa de contenção |
+| `POST /api/fila/{ticketId}/assumir?atendenteId={id}` | O atendente assume um caso. Responde `404` se o ticket ou o atendente não existe, `409` se a regra recusar |
 | `/h2-console` | Console do banco. JDBC URL `jdbc:h2:file:./data/chatbotdb`, usuário `sa`, senha vazia |
 
 Para rodar os testes:
