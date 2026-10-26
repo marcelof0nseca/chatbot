@@ -6,16 +6,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 /**
  * Agregado central do dominio. Dona das mensagens (composicao: mensagem nao
  * existe fora de uma conversa) e responsavel pela maquina de estados que
  * decide quem pode falar.
  */
+@Entity
+@Table(name = "conversa")
 public class Conversa {
 
     private static final int MAX_TENTATIVAS = 3;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private Cliente cliente;
     private List<Mensagem> mensagens = new ArrayList<>();
     private LocalDateTime iniciadaEm;
