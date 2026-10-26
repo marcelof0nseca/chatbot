@@ -15,10 +15,10 @@ public class Conversa {
 
     private static final int MAX_TENTATIVAS = 3;
 
-    private final Long id;
-    private final Cliente cliente;
-    private final List<Mensagem> mensagens = new ArrayList<>();
-    private final LocalDateTime iniciadaEm;
+    private Long id;
+    private Cliente cliente;
+    private List<Mensagem> mensagens = new ArrayList<>();
+    private LocalDateTime iniciadaEm;
     private EstadoConversa estado;
     private LocalDateTime encerradaEm;
     private Ticket ticket;
