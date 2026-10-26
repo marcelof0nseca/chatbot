@@ -6,7 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,11 +31,22 @@ public class Conversa {
     private Long id;
 
     private Cliente cliente;
+
     private List<Mensagem> mensagens = new ArrayList<>();
+
+    @Column(name = "iniciada_em", nullable = false)
     private LocalDateTime iniciadaEm;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 30)
     private EstadoConversa estado;
+
+    @Column(name = "encerrada_em")
     private LocalDateTime encerradaEm;
+
     private Ticket ticket;
+
+    @Column(name = "tentativas_sem_sucesso", nullable = false)
     private int tentativasSemSucesso;
 
     protected Conversa() {
