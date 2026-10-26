@@ -3,20 +3,43 @@ package com.nxn.chatbot.dominio;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+
 /**
  * Mensagem pertencente a uma conversa.
  *
  * Não possui setters: o histórico não deve ser alterado pela aplicação.
- * A classe e os campos não são final para permitir a persistência com JPA.
- *
- * O construtor com argumentos tem visibilidade de pacote:
- * a criação das mensagens acontece pela Conversa.
+ * O construtor com argumentos tem visibilidade de pacote para que
+ * as mensagens sejam criadas pela Conversa.
  */
+@Entity
+@Table(name = "mensagem")
 public class Mensagem {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "conversa_id", nullable = false)
     private Conversa conversa;
+
+    // Temporário: o mapeamento do autor será concluído na próxima etapa.
+    @Transient
     private Remetente autor;
+
+    @Column(name = "conteudo", nullable = false, length = 4000)
     private String conteudo;
+
+    @Column(name = "data_hora", nullable = false)
     private LocalDateTime dataHora;
 
     protected Mensagem() {
@@ -38,6 +61,10 @@ public class Mensagem {
         );
         this.conteudo = conteudo;
         this.dataHora = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public Conversa getConversa() {
