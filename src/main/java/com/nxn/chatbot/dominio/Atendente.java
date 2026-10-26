@@ -1,10 +1,28 @@
 package com.nxn.chatbot.dominio;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "atendente")
 public class Atendente extends Pessoa implements Remetente {
 
+    @Column(name = "email", nullable = false, unique = true, length = 160)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "perfil", nullable = false, length = 10)
     private PerfilAtendente perfil;
+
+    @Column(name = "disponivel", nullable = false)
     private boolean disponivel;
+
+    /** Exigido pelo JPA; não usar diretamente. */
+    protected Atendente() {
+    }
 
     public Atendente(Long id, String nome, String email, PerfilAtendente perfil) {
         super(id, nome);
