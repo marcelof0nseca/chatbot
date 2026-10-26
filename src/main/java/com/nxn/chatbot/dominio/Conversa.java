@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +14,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -30,8 +35,15 @@ public class Conversa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
+    @OneToMany(
+            mappedBy = "conversa",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<Mensagem> mensagens = new ArrayList<>();
 
     @Column(name = "iniciada_em", nullable = false)
@@ -44,6 +56,7 @@ public class Conversa {
     @Column(name = "encerrada_em")
     private LocalDateTime encerradaEm;
 
+    @OneToOne(mappedBy = "conversa", cascade = CascadeType.ALL)
     private Ticket ticket;
 
     @Column(name = "tentativas_sem_sucesso", nullable = false)
