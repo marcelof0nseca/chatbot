@@ -4,31 +4,37 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Imutável: classe final, atributos final e sem setters, porque histórico de
- * atendimento não se reescreve.
+ * Mensagem pertencente a uma conversa.
  *
- * O construtor é de pacote de propósito: só a Conversa cria mensagens, o que
- * garante que nenhuma mensagem exista solta fora de uma conversa (composição).
+ * Não possui setters: o histórico não deve ser alterado pela aplicação.
+ * A classe e os campos não são final para permitir a persistência com JPA.
+ *
+ * O construtor com argumentos tem visibilidade de pacote:
+ * a criação das mensagens acontece pela Conversa.
  */
-public final class Mensagem {
+public class Mensagem {
 
-    private final Conversa conversa;
-    private final Remetente autor;
-    private final String conteudo;
-    private final LocalDateTime dataHora;
+    private Conversa conversa;
+    private Remetente autor;
+    private String conteudo;
+    private LocalDateTime dataHora;
+
+    protected Mensagem() {
+        // Necessário para o JPA.
+    }
 
     Mensagem(Conversa conversa, Remetente autor, String conteudo) {
         if (conteudo == null || conteudo.isBlank()) {
             throw new IllegalArgumentException(
-                "O conteúdo da mensagem não pode estar vazio."
+                    "O conteúdo da mensagem não pode estar vazio."
             );
         }
 
         this.conversa = Objects.requireNonNull(
-            conversa, "A mensagem precisa pertencer a uma conversa."
+                conversa, "A mensagem precisa pertencer a uma conversa."
         );
         this.autor = Objects.requireNonNull(
-            autor, "O remetente é obrigatório."
+                autor, "O remetente é obrigatório."
         );
         this.conteudo = conteudo;
         this.dataHora = LocalDateTime.now();
