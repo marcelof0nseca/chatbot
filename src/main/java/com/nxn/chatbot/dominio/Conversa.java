@@ -21,6 +21,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
@@ -47,6 +48,7 @@ public class Conversa {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @OrderBy("dataHora ASC, id ASC")
     private List<Mensagem> mensagens = new ArrayList<>();
 
     @Column(name = "iniciada_em", nullable = false)
