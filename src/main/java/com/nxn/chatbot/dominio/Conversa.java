@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -59,6 +62,7 @@ public class Conversa {
     @OneToOne(mappedBy = "conversa", cascade = CascadeType.ALL)
     private Ticket ticket;
 
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     @Column(name = "tentativas_sem_sucesso", nullable = false)
     private int tentativasSemSucesso;
 
@@ -68,7 +72,8 @@ public class Conversa {
 
     public Conversa(Long id, Cliente cliente) {
         if (cliente == null) {
-            throw new IllegalArgumentException("A conversa precisa de um cliente.");
+            throw new IllegalArgumentException(
+                    "A conversa precisa de um cliente.");
         }
         this.id = id;
         this.cliente = cliente;
