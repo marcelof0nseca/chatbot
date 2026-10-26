@@ -24,6 +24,10 @@ public class Conversa {
     private Ticket ticket;
     private int tentativasSemSucesso;
 
+    protected Conversa() {
+        // Necessário para o JPA.
+    }
+
     public Conversa(Long id, Cliente cliente) {
         if (cliente == null) {
             throw new IllegalArgumentException("A conversa precisa de um cliente.");
@@ -42,7 +46,8 @@ public class Conversa {
      */
     public Mensagem registrarMensagem(Remetente autor, String conteudo) {
         if (!estado.aceitaNovaMensagem()) {
-            throw new IllegalStateException("Conversa encerrada não aceita novas mensagens.");
+            throw new IllegalStateException(
+                    "Conversa encerrada não aceita novas mensagens.");
         }
         Mensagem mensagem = new Mensagem(this, autor, conteudo);
         mensagens.add(mensagem);
@@ -52,10 +57,12 @@ public class Conversa {
     /** Chamado depois que o cliente aceita o aviso de privacidade. */
     public void liberarAposConsentimento() {
         if (estado != EstadoConversa.AGUARDANDO_CONSENTIMENTO) {
-            throw new IllegalStateException("A conversa não está aguardando consentimento.");
+            throw new IllegalStateException(
+                    "A conversa não está aguardando consentimento.");
         }
         if (!cliente.consentiu()) {
-            throw new IllegalStateException("O cliente ainda não aceitou o aviso de privacidade.");
+            throw new IllegalStateException(
+                    "O cliente ainda não aceitou o aviso de privacidade.");
         }
         this.estado = EstadoConversa.COM_BOT;
     }
@@ -67,7 +74,8 @@ public class Conversa {
     /** Tira a conversa do bot e abre o ticket que vai aparecer na fila. */
     public Ticket escalonar(Long idTicket, MotivoEscalonamento motivo) {
         if (estado == EstadoConversa.ENCERRADA) {
-            throw new IllegalStateException("Conversa encerrada não pode ser escalonada.");
+            throw new IllegalStateException(
+                    "Conversa encerrada não pode ser escalonada.");
         }
         if (ticket != null) {
             return ticket;
@@ -83,7 +91,8 @@ public class Conversa {
             throw new IllegalArgumentException("Atendente é obrigatório.");
         }
         if (estado == EstadoConversa.ENCERRADA) {
-            throw new IllegalStateException("Conversa encerrada não volta para atendimento.");
+            throw new IllegalStateException(
+                    "Conversa encerrada não volta para atendimento.");
         }
         this.estado = EstadoConversa.COM_ATENDENTE;
     }
