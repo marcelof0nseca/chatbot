@@ -1,20 +1,37 @@
 package com.nxn.chatbot.dominio;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+
+@MappedSuperclass
 public abstract class Pessoa {
 
-    private final Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "nome", nullable = false, length = 120)
     private String nome;
-    private final LocalDateTime dataCadastro;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private LocalDateTime dataCadastro;
+
+    /** Exigido pelo JPA; não usar diretamente. */
+    protected Pessoa() {
+    }
 
     protected Pessoa(Long id, String nome) {
-        this.id = id;
+        this.id = id; // null para registros novos: o banco gera
         this.nome = validarNome(nome);
         this.dataCadastro = LocalDateTime.now();
     }
 
+    /** Texto que identifica a pessoa na interface (sem expor dados sensíveis). */
     public abstract String getIdentificacao();
 
     public Long getId() {
@@ -33,6 +50,7 @@ public abstract class Pessoa {
         return dataCadastro;
     }
 
+    // ---- validações compartilhadas pelas subclasses ----
 
     protected static String validarNome(String nome) {
         if (nome == null || nome.isBlank()) {
@@ -51,27 +69,5 @@ public abstract class Pessoa {
             throw new IllegalArgumentException("E-mail inválido: deve conter um único '@' com texto antes e depois.");
         }
         return e;
-    }
-
-    /** Identidade pela chave, e não pelos atributos, que podem mudar. */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Pessoa outra) || id == null) {
-            return false;
-        }
-        return getClass() == o.getClass() && id.equals(outra.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" + nome + "}";
     }
 }

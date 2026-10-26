@@ -2,11 +2,25 @@ package com.nxn.chatbot.dominio;
 
 import java.time.LocalDateTime;
 
-/** Imutável: classe final, atributos final e sem setters. */
-public final class Consentimento {
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
-    private final LocalDateTime data;
-    private final String versaoPolitica;
+/**
+ * Valor embutido em Cliente. Sem setters: a imutabilidade vem da ausência
+ * deles. Não é final porque o JPA precisa de construtor vazio.
+ */
+@Embeddable
+public class Consentimento {
+
+    @Column(name = "aceito_em")
+    private LocalDateTime data;
+
+    @Column(name = "versao_politica", length = 20)
+    private String versaoPolitica;
+
+    /** Exigido pelo JPA; não usar diretamente. */
+    protected Consentimento() {
+    }
 
     public Consentimento(String versaoPolitica) {
         this(LocalDateTime.now(), versaoPolitica);
