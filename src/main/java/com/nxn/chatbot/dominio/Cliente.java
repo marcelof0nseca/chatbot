@@ -1,13 +1,49 @@
 package com.nxn.chatbot.dominio;
 
+import org.hibernate.annotations.SecondaryRow;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.SecondaryTable;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "cliente")
+@SecondaryTable(name = "consentimento",
+        pkJoinColumns = @PrimaryKeyJoinColumn(name = "cliente_id"))
+@SecondaryRow(table = "consentimento", optional = true)
 public class Cliente extends Pessoa implements Remetente {
 
     private static final int TAMANHO_MINIMO_TELEFONE = 10;
 
+    @Column(name = "telefone", nullable = false, unique = true, length = 20)
     private String telefone;
+
+    @Column(name = "email", length = 160)
     private String email;
-    private final TipoCliente tipo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 10)
+    private TipoCliente tipo;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "data",
+                    column = @Column(name = "aceito_em", table = "consentimento")),
+            @AttributeOverride(name = "versaoPolitica",
+                    column = @Column(name = "versao_politica", table = "consentimento", length = 20))
+    })
     private Consentimento consentimento;
+
+    /** Exigido pelo JPA; não usar diretamente. */
+    protected Cliente() {
+    }
 
     /** Cliente que chega pelo WhatsApp: so temos o telefone, e ainda nao consentiu. */
     public Cliente(Long id, String nome, String telefone, TipoCliente tipo) {
