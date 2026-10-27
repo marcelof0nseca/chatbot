@@ -1,7 +1,7 @@
 # Modelo de Dados — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**10 tabelas · 69 colunas** · DDL em [schema.sql](schema.sql), validado em H2 2.4
+**10 tabelas · 67 colunas** · DDL em [schema.sql](schema.sql), validado em H2 2.4
 
 ---
 
@@ -55,13 +55,13 @@ O telefone é único porque é por ele que o webhook encontra o cliente a cada m
 
 | Coluna | Tipo | Nulo | Chave | Regra |
 |---|---|---|---|---|
-| `id` | BIGINT | não | PK | |
-| `cliente_id` | BIGINT | não | FK → cliente | |
-| `versao_politica` | VARCHAR(20) | não | | Qual texto a pessoa aceitou |
-| `aceito_em` | TIMESTAMP | não | | |
-| `revogado_em` | TIMESTAMP | sim | | Nulo enquanto o aceite vale |
+| `cliente_id` | BIGINT | não | PK, FK → cliente | Uma linha por cliente |
+| `versao_politica` | VARCHAR(20) | sim | | Qual texto a pessoa aceitou |
+| `aceito_em` | TIMESTAMP | sim | | |
 
-Tabela própria, e não duas colunas em `cliente`, porque o titular pode revogar e aceitar de novo — e a LGPD exige a trilha, não só o estado atual. O consentimento válido é a linha mais recente com `revogado_em` nulo.
+Mapeada como tabela secundária de `cliente` (`@SecondaryTable`): o `Consentimento` é um valor embutido no cliente, e a linha só existe enquanto o aceite vale — revogar apaga a linha.
+
+**Pendente para o Épico 5:** a LGPD pede a trilha de aceites e revogações, e não só o estado atual. Quando esse épico entrar, a tabela passa a ter chave própria e a coluna `revogado_em`, com o consentimento vigente sendo a linha mais recente não revogada.
 
 ### 3.3 `atendente`
 
@@ -263,7 +263,7 @@ Em desenvolvimento o Hibernate gera essas tabelas a partir das entidades (`ddl-a
 O DDL foi executado contra o H2 2.4.240 e as restrições foram testadas:
 
 ```
-10 tabelas criadas, 69 colunas
+10 tabelas criadas, 67 colunas
 INSERT do fluxo completo (cliente → consentimento → conversa → mensagem → ticket): OK
 
 estado 'PENSANDO'          → Check constraint violation: CK_CONVERSA_ESTADO

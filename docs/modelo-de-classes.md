@@ -166,11 +166,11 @@ classDiagram
 | **Polimorfismo** | `Mensagem` guarda um `Remetente`; cada tipo se identifica à sua maneira — cliente pelo telefone mascarado, atendente pelo perfil e nome, bot por nome e versão |
 | **Encapsulamento** | Todos os atributos são `private`. Coleções saem por `Collections.unmodifiableList` ou `List.copyOf` |
 | **Encapsulamento de criação** | Construtores de `Mensagem` e `Ticket` têm visibilidade de pacote: só `Conversa` os cria |
-| **Imutabilidade** | `Mensagem`, `Consentimento` e `RespostaCandidata` são `final`, com campos `final` e só getters |
+| **Imutabilidade** | `RespostaCandidata` é `final`, com campos `final`. `Mensagem` e `Consentimento` não podem ser `final` porque o JPA precisa instanciá-las por reflexão; nelas a imutabilidade vem da ausência de setters |
 | **Validação no construtor** | Nome vazio, telefone curto, e-mail malformado e confiança fora de 0–1 lançam `IllegalArgumentException` |
 | **Invariantes de estado** | Transições inválidas lançam `IllegalStateException` — conversa encerrada não aceita mensagem, ticket encerrado não é assumido, atendente fora de serviço não assume caso |
 | **Enum com comportamento** | `EstadoConversa.aceitaNovaMensagem()`, `PerfilAtendente.gerenciaBaseDeConhecimento()` |
-| **Identidade** | `equals`/`hashCode` em `Pessoa` pela chave, não por atributos mutáveis |
+| **Identidade** | Chave `@Id` gerada pelo banco em todas as entidades; dentro de uma sessão do JPA, cada linha corresponde a um único objeto |
 | **Comportamento na entidade** | O modelo não é anêmico: `conversa.escalonar()`, `ticket.assumir()`, `chatbot.atender()` carregam a regra, em vez de getters e setters expostos |
 
 ---

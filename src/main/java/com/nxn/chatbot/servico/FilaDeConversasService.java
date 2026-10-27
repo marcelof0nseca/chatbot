@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nxn.chatbot.dominio.Atendente;
 import com.nxn.chatbot.dominio.Conversa;
@@ -42,7 +43,11 @@ public class FilaDeConversasService {
     /**
      * A fila como o atendente ve: quem aguarda vem antes de quem ja esta sendo
      * atendido e, dentro de cada grupo, o caso mais antigo fica no topo.
+     *
+     * Transacional porque a previa le as mensagens da conversa, carregadas
+     * sob demanda pelo JPA; fora de uma transacao isso falharia.
      */
+    @Transactional(readOnly = true)
     public List<ItemDaFila> listarFila() {
         Stream<Ticket> aguardando = porAntiguidade(StatusTicket.ABERTO);
         Stream<Ticket> emAtendimento = porAntiguidade(StatusTicket.EM_ATENDIMENTO);
@@ -52,6 +57,7 @@ public class FilaDeConversasService {
     }
 
     /** Indicadores do dia exibidos no topo da tela. */
+    @Transactional(readOnly = true)
     public ResumoDaFila resumoDoDia() {
         List<Ticket> aguardando = repositorio.buscarPorStatus(StatusTicket.ABERTO);
         long emAtendimento = repositorio.buscarPorStatus(StatusTicket.EM_ATENDIMENTO).size();
@@ -76,7 +82,11 @@ public class FilaDeConversasService {
     /**
      * O atendente assume um caso da fila. A conversa sai do bot no mesmo
      * movimento, porque quem muda o estado e o proprio Ticket.
+     *
+     * Ticket e conversa sao gravados na mesma transacao: ou os dois mudam,
+     * ou nenhum muda.
      */
+    @Transactional
     public ItemDaFila assumir(Long ticketId, Long atendenteId) {
         Ticket ticket = repositorio.buscarTicket(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Ticket não encontrado: " + ticketId));
