@@ -51,6 +51,13 @@ public class FilaRepositorioEmMemoria implements FilaRepositorio {
     }
 
     @Override
+    public List<Atendente> listarAtendentes() {
+        return atendentes.values().stream()
+                .sorted(java.util.Comparator.comparing(Atendente::getNome))
+                .toList();
+    }
+
+    @Override
     public void salvar(Ticket ticket) {
         tickets.put(ticket.getId(), ticket);
     }

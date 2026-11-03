@@ -10,8 +10,8 @@ import com.wxn.chatbot.dominio.Ticket;
 
 /**
  * Porta de acesso a dados da fila. Quem consome declara o que precisa, e a
- * implementacao fica de fora: hoje em memoria, e com o mapeamento JPA pronto
- * passa a ser um adaptador sobre os repositorios Spring Data.
+ * implementacao fica de fora: em producao, FilaRepositorioJpa, sobre os
+ * repositorios Spring Data; nos testes, um duble em memoria.
  *
  * E o que permite testar as regras de negocio sem subir banco nenhum.
  */
@@ -22,6 +22,9 @@ public interface FilaRepositorio {
     Optional<Ticket> buscarTicket(Long id);
 
     Optional<Atendente> buscarAtendente(Long id);
+
+    /** Atendentes em ordem alfabetica, para o painel escolher quem esta atendendo. */
+    List<Atendente> listarAtendentes();
 
     void salvar(Ticket ticket);
 

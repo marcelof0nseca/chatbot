@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.wxn.chatbot.dominio.Atendente;
@@ -44,6 +45,11 @@ public class FilaRepositorioJpa implements FilaRepositorio {
     @Override
     public Optional<Atendente> buscarAtendente(Long id) {
         return atendentes.findById(id);
+    }
+
+    @Override
+    public List<Atendente> listarAtendentes() {
+        return atendentes.findAll(Sort.by("nome"));
     }
 
     @Override
