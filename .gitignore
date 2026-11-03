@@ -47,6 +47,9 @@ logs/
 *.tmp
 *.bak
 
+### Saida de ferramentas de teste do navegador ###
+.playwright-mcp/
+
 ### SO ###
 .DS_Store
 Thumbs.db

@@ -1,7 +1,7 @@
 # Modelo de Classes de Entidade — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**Pacote:** `com.wxn.chatbot.dominio` · **17 classes** · **21 testes automatizados**
+**Pacote:** `com.wxn.chatbot.dominio` · **18 classes** · **21 testes automatizados**
 
 ---
 
@@ -19,6 +19,7 @@
 | `ArtigoConhecimento` | entidade | Item da base: pergunta, variações, resposta |
 | `Consentimento` | objeto de valor | Aceite do aviso de privacidade, com data e versão (LGPD) |
 | `RespostaCandidata` | objeto de valor | Artigo encontrado + nota de confiança |
+| `Relogio` | utilitário do domínio | Fonte única de "agora", no fuso de Recife. As entidades leem a hora daqui; nos testes, um relógio fixo deixa os carimbos de tempo previsíveis |
 | `Remetente` | interface | Contrato de quem pode enviar mensagem |
 | `TipoRemetente`, `TipoCliente`, `PerfilAtendente`, `EstadoConversa`, `MotivoEscalonamento`, `StatusTicket` | enums | Conjuntos fechados de valores, alguns com comportamento |
 
