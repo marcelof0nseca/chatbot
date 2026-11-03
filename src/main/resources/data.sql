@@ -24,18 +24,19 @@ MERGE INTO cliente (id, nome, criado_em, telefone, email, tipo) KEY (id) VALUES
     (1006, 'Rafael Dias', CURRENT_TIMESTAMP, '5581944449907', NULL, 'EXTERNO');
 
 -- CONSENTIMENTO (tabela secundaria de cliente: chave = cliente_id)
+-- O aceite e registrado no inicio de cada conversa, como no fluxo real.
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1001, CURRENT_TIMESTAMP, 'v1');
+    (1001, DATEADD('MINUTE', -43, CURRENT_TIMESTAMP), 'v1');
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1002, CURRENT_TIMESTAMP, 'v1');
+    (1002, DATEADD('MINUTE', -25, CURRENT_TIMESTAMP), 'v1');
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1003, CURRENT_TIMESTAMP, 'v1');
+    (1003, DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), 'v1');
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1004, CURRENT_TIMESTAMP, 'v1');
+    (1004, DATEADD('HOUR', -3, CURRENT_TIMESTAMP), 'v1');
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1005, CURRENT_TIMESTAMP, 'v1');
+    (1005, DATEADD('HOUR', -2, CURRENT_TIMESTAMP), 'v1');
 MERGE INTO consentimento (cliente_id, aceito_em, versao_politica) KEY (cliente_id) VALUES
-    (1006, CURRENT_TIMESTAMP, 'v1');
+    (1006, DATEADD('HOUR', -1, CURRENT_TIMESTAMP), 'v1');
 
 -- CONVERSAS escalonadas (aguardando atendente)
 MERGE INTO conversa (id, cliente_id, iniciada_em, estado, encerrada_em, tentativas_sem_sucesso) KEY (id) VALUES
@@ -74,3 +75,22 @@ MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, da
     (1005, 1005, 'CLIENTE', 1005, 'qual o prazo para troca?', DATEADD('HOUR', -2, CURRENT_TIMESTAMP));
 MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
     (1006, 1006, 'CLIENTE', 1006, 'qual o prazo para troca?', DATEADD('HOUR', -1, CURRENT_TIMESTAMP));
+
+-- RESPOSTAS DO BOT, para a Tela 7 mostrar o historico que o atendente recebe
+-- (tipo CHATBOT: sem remetente_id). IDs 1101+ para nao colidir com as falas acima.
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1101, 1001, 'CLIENTE', 1001, 'oi, tenho uma dúvida na cobrança', DATEADD('MINUTE', -43, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1102, 1001, 'CHATBOT', NULL, 'Olá! Eu sou o Tino, o assistente virtual da WXN. Como posso ajudar?', DATEADD('MINUTE', -43, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1103, 1001, 'CHATBOT', NULL, 'Não tenho certeza sobre esse caso e prefiro não te dar uma resposta errada. Vou te passar para um atendente, com o histórico desta conversa.', DATEADD('MINUTE', -41, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1104, 1002, 'CHATBOT', NULL, 'Claro! Vou te passar para um atendente, com o histórico desta conversa.', DATEADD('MINUTE', -24, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1105, 1003, 'CHATBOT', NULL, 'Consigo te dar informações agora, mas o cancelamento precisa passar por um atendente. Seu caso fica na fila e é atendido no próximo horário de atendimento.', DATEADD('MINUTE', -9, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1106, 1004, 'CHATBOT', NULL, 'A troca pode ser solicitada em até 30 dias corridos após o recebimento. O produto precisa estar sem uso e com a etiqueta original.', DATEADD('MINUTE', -179, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1107, 1005, 'CHATBOT', NULL, 'A troca pode ser solicitada em até 30 dias corridos após o recebimento. O produto precisa estar sem uso e com a etiqueta original.', DATEADD('MINUTE', -119, CURRENT_TIMESTAMP));
+MERGE INTO mensagem (id, conversa_id, tipo_remetente, remetente_id, conteudo, data_hora) KEY (id) VALUES
+    (1108, 1006, 'CHATBOT', NULL, 'A troca pode ser solicitada em até 30 dias corridos após o recebimento. O produto precisa estar sem uso e com a etiqueta original.', DATEADD('MINUTE', -59, CURRENT_TIMESTAMP));

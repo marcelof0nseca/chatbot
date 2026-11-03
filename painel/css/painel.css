@@ -1,0 +1,423 @@
+/* Painel de atendimento do Tino.
+   Uma tela lida o dia inteiro: neutros azulados e calmos, o azul do Tino para
+   marca e acoes, ambar so para espera longa. O tempo de espera e o elemento
+   forte da fila; o resto fica discreto. */
+
+:root {
+  --fundo: #f3f5f9;
+  --superficie: #ffffff;
+  --tinta: #14213b;
+  --tinta-2: #56637b;
+  --tinta-3: #7d889c;
+  --linha: #dde3ec;
+  --linha-forte: #c3ccd9;
+  --tino: #2563eb;
+  --tino-escuro: #1d4ed8;
+  --tino-claro: #e8efff;
+  --longa: #a8520a;
+  --longa-claro: #fdf2e6;
+  --atendendo: #0f6e66;
+  --atendendo-claro: #e3f4f2;
+  --erro: #b42318;
+  --erro-claro: #fdecea;
+
+  --fonte: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --raio: 10px;
+  --raio-p: 6px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--tinta);
+  font-family: var(--fonte);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+h1, h2, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+
+a { color: var(--tino-escuro); }
+
+:focus-visible {
+  outline: 3px solid var(--tino);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- barra superior ---------- */
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linha);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--tinta);
+  text-decoration: none;
+}
+
+.marca img { width: 36px; height: 36px; }
+.marca-nome { font-weight: 700; font-size: 1.15rem; }
+.marca-sub { color: var(--tinta-2); font-size: 0.95rem; }
+
+.quem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--tinta-2);
+  font-size: 0.95rem;
+}
+
+.quem select {
+  font: inherit;
+  color: var(--tinta);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+}
+
+/* ---------- pagina ---------- */
+
+.pagina {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2.25rem) clamp(1rem, 4vw, 2.5rem) 4rem;
+}
+
+.titulo-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+h1 { font-size: clamp(1.6rem, 3.4vw, 2.1rem); line-height: 1.2; }
+
+.atualizacao {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--tinta-3);
+  font-size: 0.9rem;
+}
+
+/* ---------- botoes ---------- */
+
+.botao, .botao-secundario {
+  font: inherit;
+  font-weight: 700;
+  border-radius: var(--raio-p);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.botao {
+  color: #fff;
+  background: var(--tino);
+  border: 1px solid var(--tino);
+}
+
+.botao:hover { background: var(--tino-escuro); border-color: var(--tino-escuro); }
+
+.botao-secundario {
+  color: var(--tino-escuro);
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
+  font-weight: 400;
+  padding: 0.35rem 0.75rem;
+}
+
+.botao-secundario:hover { border-color: var(--tino); }
+
+.botao:disabled, .botao-secundario:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.link-acao {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- indicadores ---------- */
+
+.resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2.5rem;
+  margin: 1.25rem 0 1.75rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--linha);
+  border-bottom: 1px solid var(--linha);
+}
+
+.resumo:empty { display: none; }
+
+.indicador { display: flex; flex-direction: column; }
+.indicador-valor { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.indicador-nome { color: var(--tinta-2); font-size: 0.9rem; }
+.indicador-detalhe { color: var(--tinta-3); font-size: 0.85rem; }
+
+/* ---------- avisos ---------- */
+
+.aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--raio-p);
+  border-left: 4px solid var(--tino);
+  background: var(--tino-claro);
+}
+
+.aviso.erro { border-left-color: var(--erro); background: var(--erro-claro); }
+.aviso.sucesso { border-left-color: var(--atendendo); background: var(--atendendo-claro); }
+
+.aviso-fechar {
+  font: inherit;
+  background: none;
+  border: none;
+  color: var(--tinta-2);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---------- fila ---------- */
+
+.grupo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  margin: 1.75rem 0 0.6rem;
+}
+
+.grupo:first-child { margin-top: 0; }
+.grupo-contagem { color: var(--tinta-3); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+.casos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+
+.caso {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.caso + .caso { border-top: 1px solid var(--linha); }
+
+.espera { display: flex; flex-direction: column; line-height: 1.05; }
+.espera-numero { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.espera-unidade { color: var(--tinta-2); font-size: 0.85rem; }
+.espera.longa .espera-numero { color: var(--longa); }
+.espera.longa .espera-unidade { color: var(--longa); }
+
+.caso-corpo { min-width: 0; }
+.caso-topo { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.contato { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.motivo { color: var(--tinta-2); font-size: 0.95rem; }
+
+.previa {
+  margin-top: 0.2rem;
+  color: var(--tinta-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caso-acao { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.com-quem { color: var(--atendendo); font-size: 0.9rem; font-weight: 700; white-space: nowrap; }
+
+.caso.atendendo .espera-numero { color: var(--tinta-3); }
+
+/* ---------- estados ---------- */
+
+.estado {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+
+.estado p + p { margin-top: 0.35rem; }
+.estado-titulo { font-weight: 700; font-size: 1.1rem; }
+.estado .botao { margin-top: 1rem; }
+.estado.erro { border-color: #f1c5c0; }
+.estado.erro .estado-titulo { color: var(--erro); }
+
+.carregando { color: var(--tinta-2); }
+
+.grupo-vazio {
+  padding: 1rem 1.25rem;
+  color: var(--tinta-2);
+  background: var(--superficie);
+  border: 1px dashed var(--linha-forte);
+  border-radius: var(--raio);
+}
+
+/* ---------- conversa (Tela 7) ---------- */
+
+.voltar { display: inline-block; margin-bottom: 1rem; }
+
+.conversa-topo { margin-bottom: 1.25rem; }
+.conversa-status { margin-top: 0.4rem; color: var(--tinta-2); }
+
+.selo {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.selo.aguardando { background: var(--tino-claro); color: var(--tino-escuro); }
+.selo.atendendo { background: var(--atendendo-claro); color: var(--atendendo); }
+.selo.encerrado { background: #edf0f4; color: var(--tinta-2); }
+
+.conversa-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.historico {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mensagens {
+  list-style: none;
+  margin: 0;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.mensagem { max-width: 78%; display: flex; flex-direction: column; gap: 0.2rem; }
+.mensagem-autor { font-size: 0.85rem; color: var(--tinta-3); }
+.mensagem-autor strong { color: var(--tinta-2); }
+
+.mensagem-texto {
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--raio);
+  background: var(--fundo);
+  overflow-wrap: anywhere;
+}
+
+.mensagem.de-cliente { align-self: flex-start; }
+.mensagem.de-bot, .mensagem.de-atendente { align-self: flex-end; text-align: left; }
+.mensagem.de-bot .mensagem-texto { background: var(--tino-claro); }
+.mensagem.de-atendente .mensagem-texto { background: var(--atendendo-claro); }
+.mensagem.de-bot .mensagem-autor, .mensagem.de-atendente .mensagem-autor { align-self: flex-end; }
+
+.marco {
+  align-self: stretch;
+  margin: 0.35rem 0;
+  padding: 0.6rem 1rem;
+  border-top: 1px dashed var(--tino);
+  border-bottom: 1px dashed var(--tino);
+  color: var(--tino-escuro);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.resposta {
+  border-top: 1px solid var(--linha);
+  padding: 1rem 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.resposta textarea {
+  font: inherit;
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-p);
+  background: var(--fundo);
+  color: var(--tinta-3);
+}
+
+.resposta-linha { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.resposta-nota { color: var(--tinta-3); font-size: 0.9rem; }
+
+.ficha {
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.1rem 1.25rem;
+}
+
+.ficha h2 { font-size: 1rem; margin-bottom: 0.75rem; }
+.ficha dl { margin: 0; }
+.ficha dt { color: var(--tinta-3); font-size: 0.85rem; margin-top: 0.85rem; }
+.ficha dt:first-child { margin-top: 0; }
+.ficha dd { margin: 0.1rem 0 0; overflow-wrap: anywhere; }
+
+.na-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--raio-p);
+  background: var(--tino-claro);
+  border-left: 4px solid var(--tino);
+}
+
+/* ---------- telas estreitas ---------- */
+
+@media (max-width: 720px) {
+  .caso { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .caso-acao { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+  .espera-numero { font-size: 1.6rem; }
+  .conversa-grade { grid-template-columns: 1fr; }
+  .mensagem { max-width: 92%; }
+  .marca-sub { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
