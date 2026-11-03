@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fila de atendimento | Tino</title>
+  <link rel="icon" href="img/tino.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="index.html">
+      <img src="img/tino.png" alt="" width="36" height="36">
+      <span class="marca-nome">Tino</span>
+      <span class="marca-sub">Painel de atendimento da WXN</span>
+    </a>
+    <label class="quem">Atendendo como
+      <select id="atendente"><option>carregando…</option></select>
+    </label>
+  </header>
+
+  <main class="pagina">
+    <div class="titulo-linha">
+      <h1>Fila de atendimento</h1>
+      <p class="atualizacao">
+        <span id="atualizado"></span>
+        <button id="atualizar" class="botao-secundario" type="button">Atualizar</button>
+      </p>
+    </div>
+
+    <section id="resumo" class="resumo" aria-label="Indicadores de hoje"></section>
+    <div id="aviso" role="status" aria-live="polite"></div>
+    <section id="fila" aria-busy="true">
+      <p class="carregando">Carregando a fila…</p>
+    </section>
+  </main>
+
+  <script type="module" src="js/fila.js"></script>
+</body>
+</html>
