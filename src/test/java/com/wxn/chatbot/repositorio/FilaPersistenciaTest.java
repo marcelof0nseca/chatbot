@@ -37,7 +37,7 @@ import jakarta.persistence.EntityManager;
  * ./data. Cada teste e desfeito ao final (rollback).
  */
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:fila-teste;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=jdbc:h2:mem:fila-teste;DB_CLOSE_DELAY=-1;TIME ZONE=America/Recife",
         "spring.jpa.show-sql=false"
 })
 @Transactional

@@ -71,7 +71,7 @@ public class Ticket {
         this.id = id;
         this.conversa = conversa;
         this.motivo = motivo;
-        this.abertoEm = LocalDateTime.now();
+        this.abertoEm = Relogio.agora();
         this.status = StatusTicket.ABERTO;
     }
 
@@ -93,7 +93,7 @@ public class Ticket {
         // estado intermediario invalido.
         conversa.atenderPor(atendente);
         this.atendente = atendente;
-        this.assumidoEm = LocalDateTime.now();
+        this.assumidoEm = Relogio.agora();
         this.status = StatusTicket.EM_ATENDIMENTO;
     }
 
@@ -110,7 +110,7 @@ public class Ticket {
                 || status == StatusTicket.CANCELADO) {
             throw new IllegalStateException("Ticket já encerrado.");
         }
-        this.encerradoEm = LocalDateTime.now();
+        this.encerradoEm = Relogio.agora();
         this.status = desfecho;
         conversa.encerrar();
     }
@@ -119,7 +119,7 @@ public class Ticket {
     public Duration tempoDeEspera() {
         LocalDateTime fim = (assumidoEm != null)
                 ? assumidoEm
-                : LocalDateTime.now();
+                : Relogio.agora();
         return Duration.between(abertoEm, fim);
     }
 
@@ -129,7 +129,7 @@ public class Ticket {
         }
         LocalDateTime fim = (encerradoEm != null)
                 ? encerradoEm
-                : LocalDateTime.now();
+                : Relogio.agora();
         return Duration.between(assumidoEm, fim);
     }
 

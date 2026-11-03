@@ -28,7 +28,7 @@ public abstract class Pessoa {
     protected Pessoa(Long id, String nome) {
         this.id = id; // null para registros novos: o banco gera
         this.nome = validarNome(nome);
-        this.dataCadastro = LocalDateTime.now();
+        this.dataCadastro = Relogio.agora();
     }
 
     /** Texto que identifica a pessoa na interface (sem expor dados sensíveis). */

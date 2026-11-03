@@ -125,7 +125,7 @@ public class Mensagem {
         }
 
         this.conteudo = conteudo;
-        this.dataHora = LocalDateTime.now();
+        this.dataHora = Relogio.agora();
     }
 
     @PrePersist

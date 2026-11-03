@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Clock;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import com.wxn.chatbot.dominio.Conversa;
 import com.wxn.chatbot.dominio.EstadoConversa;
 import com.wxn.chatbot.dominio.MotivoEscalonamento;
 import com.wxn.chatbot.dominio.PerfilAtendente;
+import com.wxn.chatbot.dominio.Relogio;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.TipoCliente;
 import com.wxn.chatbot.dto.ItemDaFila;
@@ -34,7 +36,7 @@ class FilaDeConversasServiceTest {
     @BeforeEach
     void preparar() {
         repositorio = new FilaRepositorioEmMemoria();
-        servico = new FilaDeConversasService(repositorio);
+        servico = new FilaDeConversasService(repositorio, Clock.system(Relogio.ZONA_PADRAO));
 
         bruno = new Atendente(1L, "Bruno Dias", "bruno@wxn.com.br", PerfilAtendente.ATENDENTE);
         bruno.entrarEmServico();

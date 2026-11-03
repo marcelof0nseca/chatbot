@@ -23,7 +23,7 @@ public class Consentimento {
     }
 
     public Consentimento(String versaoPolitica) {
-        this(LocalDateTime.now(), versaoPolitica);
+        this(Relogio.agora(), versaoPolitica);
     }
 
     public Consentimento(LocalDateTime data, String versaoPolitica) {

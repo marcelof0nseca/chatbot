@@ -1,5 +1,6 @@
 package com.wxn.chatbot.servico;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -33,11 +34,18 @@ public class FilaDeConversasService {
 
     private final FilaRepositorio repositorio;
 
-    public FilaDeConversasService(FilaRepositorio repositorio) {
+    /** Relogio com a zona fixa: define onde comeca o "dia" do resumo. */
+    private final Clock relogio;
+
+    public FilaDeConversasService(FilaRepositorio repositorio, Clock relogio) {
         if (repositorio == null) {
             throw new IllegalArgumentException("O repositório é obrigatório.");
         }
+        if (relogio == null) {
+            throw new IllegalArgumentException("O relógio é obrigatório.");
+        }
         this.repositorio = repositorio;
+        this.relogio = relogio;
     }
 
     /**
@@ -68,7 +76,8 @@ public class FilaDeConversasService {
                         .average()
                         .orElse(0.0));
 
-        LocalDateTime inicioDoDia = LocalDate.now().atStartOfDay();
+        // Meia-noite de Recife, nao a do servidor: em UTC o dia viraria as 21h.
+        LocalDateTime inicioDoDia = LocalDate.now(relogio).atStartOfDay();
         long total = repositorio.contarConversasDesde(inicioDoDia);
         long peloBot = repositorio.contarConversasResolvidasPeloBotDesde(inicioDoDia);
 

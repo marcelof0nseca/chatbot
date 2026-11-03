@@ -51,7 +51,7 @@ public class ArtigoConhecimento {
         }
 
         this.variacoes = List.copyOf(variacoes);
-        this.atualizadoEm = LocalDateTime.now();
+        this.atualizadoEm = Relogio.agora();
     }
 
     public void adicionarVariacao(String variacao) {
@@ -59,7 +59,7 @@ public class ArtigoConhecimento {
         List<String> novas = new ArrayList<>(variacoes);
         novas.add(variacao);
         this.variacoes = List.copyOf(novas);
-        this.atualizadoEm = LocalDateTime.now();
+        this.atualizadoEm = Relogio.agora();
     }
 
     /** Desativar em vez de apagar preserva o vínculo com mensagens antigas. */

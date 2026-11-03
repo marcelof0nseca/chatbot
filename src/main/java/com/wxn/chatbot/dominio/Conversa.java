@@ -79,7 +79,7 @@ public class Conversa {
         }
         this.id = id;
         this.cliente = cliente;
-        this.iniciadaEm = LocalDateTime.now();
+        this.iniciadaEm = Relogio.agora();
         this.estado = cliente.consentiu()
                 ? EstadoConversa.COM_BOT
                 : EstadoConversa.AGUARDANDO_CONSENTIMENTO;
@@ -147,7 +147,7 @@ public class Conversa {
             return;
         }
         this.estado = EstadoConversa.ENCERRADA;
-        this.encerradaEm = LocalDateTime.now();
+        this.encerradaEm = Relogio.agora();
     }
 
     public void registrarTentativaSemSucesso() {
