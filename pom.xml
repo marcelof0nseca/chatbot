@@ -8,7 +8,7 @@
 		<version>4.1.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.nxn</groupId>
+	<groupId>com.wxn</groupId>
 	<artifactId>chatbot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>chatbot</name>

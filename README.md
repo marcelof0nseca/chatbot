@@ -60,7 +60,7 @@ e o arquivo do H2 seria perdido.
 ## Estrutura
 
 ```
-src/main/java/com/nxn/chatbot/
+src/main/java/com/wxn/chatbot/
 ├── ChatbotApplication.java          # classe principal
 ├── config/CorsConfig.java           # libera o dashboard em outra origem
 ├── controller/HealthController.java # GET /api/health

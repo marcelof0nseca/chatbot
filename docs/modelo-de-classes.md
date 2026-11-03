@@ -1,7 +1,7 @@
 # Modelo de Classes de Entidade — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**Pacote:** `com.nxn.chatbot.dominio` · **17 classes** · **21 testes automatizados**
+**Pacote:** `com.wxn.chatbot.dominio` · **17 classes** · **21 testes automatizados**
 
 ---
 

@@ -2,7 +2,7 @@
 -- Tino - assistente de atendimento (WXN)
 -- Esquema do banco de dados - versao 2
 --
--- Alinhado ao modelo de classes em com.nxn.chatbot.dominio:
+-- Alinhado ao modelo de classes em com.wxn.chatbot.dominio:
 -- chave primaria BIGINT de identidade, enums como VARCHAR com CHECK,
 -- carimbos de tempo em todas as tabelas de entidade.
 --
