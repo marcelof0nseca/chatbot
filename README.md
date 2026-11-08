@@ -31,8 +31,9 @@ A aplicação sobe em `http://localhost:8080`.
 | `GET /api/health` | Verificação de que o servidor subiu. Responde `ok` |
 | `GET /api/fila` | Fila de atendimento: quem aguarda primeiro, o caso mais antigo no topo |
 | `GET /api/fila/resumo` | Indicadores do dia: na fila, em atendimento, espera média e taxa de contenção |
-| `POST /api/fila/{ticketId}/assumir?atendenteId={id}` | O atendente assume um caso. Responde `404` se o ticket ou o atendente não existe, `409` se a regra recusar |
-| `GET /api/fila/{ticketId}/conversa` | A conversa de um caso, com o histórico completo, para a Tela 7 |
+| `POST /api/fila/{ticketId}/assumir?atendenteId={id}` | O atendente assume um caso. Responde `404` se o ticket ou o atendente não existe, `400` se faltar dado, `409` se a regra recusar |
+| `POST /api/fila/{ticketId}/transferir` | Passa um caso em atendimento a outro atendente. Corpo `{"quemTransfereId", "destinoId", "motivo"}`. Mesmos códigos de erro; regras em [docs/transferencia.md](docs/transferencia.md) |
+| `GET /api/fila/{ticketId}/conversa` | A conversa de um caso, com o histórico completo e as transferências, para a Tela 7 |
 | `GET /api/atendentes` | A equipe que pode assumir casos, em ordem alfabética |
 | `/h2-console` | Console do banco. JDBC URL `jdbc:h2:file:./data/chatbotdb`, usuário `sa`, senha vazia |
 
@@ -83,7 +84,7 @@ src/main/java/com/wxn/chatbot/
 ├── dominio/                  # modelo de entidades e regras de negocio
 ├── dto/                      # o que a API entrega ao painel
 ├── repositorio/              # acesso a dados com Spring Data JPA
-└── servico/                  # regras da fila e do atendimento
+└── servico/                  # regras da fila, do atendimento e da transferência
 
 painel/                       # painel web: Telas 6 e 7
 ```
@@ -101,8 +102,9 @@ abaixo do limite de confiança, nenhum caminho do código devolve conteúdo da b
 |---|---|
 | [docs/ambientes.md](docs/ambientes.md) | Ambientes de desenvolvimento e deploy |
 | [docs/modelo-de-classes.md](docs/modelo-de-classes.md) | Modelo de entidades em POO, com diagrama de classes |
-| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Dicionário de dados das 10 tabelas e como o contexto da conversa é salvo |
+| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Dicionário de dados das 11 tabelas e como o contexto da conversa é salvo |
 | [docs/schema.sql](docs/schema.sql) | DDL executável, validado em H2 |
+| [docs/transferencia.md](docs/transferencia.md) | Transferência de caso: critérios de aceite, regras adotadas e contrato da API |
 | [docs/Wireframe-Tino-Grupo10.pdf](docs/Wireframe-Tino-Grupo10.pdf) | Wireframe v1, baixa fidelidade, das 9 telas |
 | [docs/Wireframe-Tino-Grupo10-v2.pdf](docs/Wireframe-Tino-Grupo10-v2.pdf) | Wireframe v2, média fidelidade, das Telas 6 e 7 com todos os estados |
 

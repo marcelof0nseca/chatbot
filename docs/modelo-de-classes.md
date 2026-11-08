@@ -1,7 +1,7 @@
 # Modelo de Classes de Entidade — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**Pacote:** `com.wxn.chatbot.dominio` · **18 classes** · **21 testes automatizados**
+**Pacote:** `com.wxn.chatbot.dominio` · **19 classes** · **32 testes automatizados**
 
 ---
 
@@ -16,6 +16,7 @@
 | `Conversa` | entidade (agregado) | Dona das mensagens e da máquina de estados |
 | `Mensagem` | entidade imutável | Uma fala dentro de uma conversa |
 | `Ticket` | entidade | O atendimento humano aberto no escalonamento |
+| `Transferencia` | entidade imutável | Registro de um caso que mudou de mãos: origem, destino, quem decidiu, motivo e quando |
 | `ArtigoConhecimento` | entidade | Item da base: pergunta, variações, resposta |
 | `Consentimento` | objeto de valor | Aceite do aviso de privacidade, com data e versão (LGPD) |
 | `RespostaCandidata` | objeto de valor | Artigo encontrado + nota de confiança |
@@ -98,9 +99,18 @@ classDiagram
         -MotivoEscalonamento motivo
         -StatusTicket status
         +assumir(Atendente)
+        +transferirPara(Atendente, Atendente, String) Transferencia
         +resolver()
         +cancelar()
         +tempoDeEspera() Duration
+    }
+
+    class Transferencia {
+        -String motivo
+        -LocalDateTime realizadaEm
+        +getOrigem() Atendente
+        +getDestino() Atendente
+        +getRealizadaPor() Atendente
     }
 
     class ArtigoConhecimento {
@@ -135,6 +145,8 @@ classDiagram
     Conversa "1" *-- "*" Mensagem
     Conversa "1" *-- "0..1" Ticket
     Ticket "*" --> "0..1" Atendente
+    Ticket "1" *-- "*" Transferencia
+    Transferencia "*" --> "3" Atendente : origem, destino, realizadaPor
     Mensagem "*" --> "1" Remetente
     Chatbot "1" o-- "*" ArtigoConhecimento
     RespostaCandidata "1" --> "1" ArtigoConhecimento
@@ -150,6 +162,8 @@ classDiagram
 | Conversa → Mensagem | 1 para N | **composição** | Mensagem não existe fora de uma conversa — o construtor é de pacote |
 | Conversa → Ticket | 1 para 0..1 | **composição** | O ticket nasce do escalonamento e morre com a conversa |
 | Ticket → Atendente | N para 0..1 | associação | Um ticket na fila ainda não tem atendente; por isso `Optional` |
+| Ticket → Transferencia | 1 para N | **composição** | A transferência só existe dentro de um caso, e só `Ticket.transferirPara()` a cria (construtor de pacote) |
+| Transferencia → Atendente | N para 1, três vezes | associação | Origem, destino e quem decidiu. Quem decidiu nem sempre é a origem: o gestor redistribui casos que não são dele |
 | Cliente → Consentimento | 1 para 0..1 | **composição** | O aceite só faz sentido dentro do cliente, e pode ser revogado |
 | Mensagem → Remetente | N para 1 | associação **polimórfica** | O autor pode ser Cliente, Chatbot ou Atendente |
 | Chatbot → ArtigoConhecimento | 1 para N | **agregação** | O artigo existe no banco independente do bot |
@@ -166,13 +180,13 @@ classDiagram
 | **Interface** | `Remetente`, implementada por três classes de hierarquias diferentes |
 | **Polimorfismo** | `Mensagem` guarda um `Remetente`; cada tipo se identifica à sua maneira — cliente pelo telefone mascarado, atendente pelo perfil e nome, bot por nome e versão |
 | **Encapsulamento** | Todos os atributos são `private`. Coleções saem por `Collections.unmodifiableList` ou `List.copyOf` |
-| **Encapsulamento de criação** | Construtores de `Mensagem` e `Ticket` têm visibilidade de pacote: só `Conversa` os cria |
+| **Encapsulamento de criação** | Construtores de `Mensagem` e `Ticket` têm visibilidade de pacote: só `Conversa` os cria. O de `Transferencia` também: só `Ticket` a cria, depois de validar as regras |
 | **Imutabilidade** | `RespostaCandidata` é `final`, com campos `final`. `Mensagem` e `Consentimento` não podem ser `final` porque o JPA precisa instanciá-las por reflexão; nelas a imutabilidade vem da ausência de setters |
 | **Validação no construtor** | Nome vazio, telefone curto, e-mail malformado e confiança fora de 0–1 lançam `IllegalArgumentException` |
-| **Invariantes de estado** | Transições inválidas lançam `IllegalStateException` — conversa encerrada não aceita mensagem, ticket encerrado não é assumido, atendente fora de serviço não assume caso |
+| **Invariantes de estado** | Transições inválidas lançam `IllegalStateException` — conversa encerrada não aceita mensagem, ticket encerrado não é assumido, atendente fora de serviço não assume caso, caso que não está em atendimento não é transferido |
 | **Enum com comportamento** | `EstadoConversa.aceitaNovaMensagem()`, `PerfilAtendente.gerenciaBaseDeConhecimento()` |
 | **Identidade** | Chave `@Id` gerada pelo banco em todas as entidades; dentro de uma sessão do JPA, cada linha corresponde a um único objeto |
-| **Comportamento na entidade** | O modelo não é anêmico: `conversa.escalonar()`, `ticket.assumir()`, `chatbot.atender()` carregam a regra, em vez de getters e setters expostos |
+| **Comportamento na entidade** | O modelo não é anêmico: `conversa.escalonar()`, `ticket.assumir()`, `ticket.transferirPara()`, `chatbot.atender()` carregam a regra, em vez de getters e setters expostos |
 
 ---
 
@@ -214,12 +228,14 @@ Abaixo do limite de confiança não existe caminho no código que devolva conte�
 ## 7. Verificação
 
 ```bash
-.\mvnw.cmd -Dtest=DominioTest test
+.\mvnw.cmd "-Dtest=DominioTest,TransferenciaTest" test
 ```
 
 ```
-Tests run: 21, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
 Os 21 testes cobrem: autorização do gestor, cliente criado a partir do WhatsApp sem e-mail, exigência de consentimento, registro e revogação do aceite, resposta pela base, fallback com escalonamento, handoff preservando histórico, recusa de atendente fora de serviço, encerramento do ticket, bloqueio de mensagem em conversa encerrada, coleção somente leitura, isolamento de artigo interno, artigo desativado, atualização da base pelo gestor, escolha do artigo de maior confiança, mascaramento de telefone, validação de dados inválidos, o fluxo completo do consentimento, a recusa do turno quando a conversa está com um humano e o bloqueio de reabertura de conversa encerrada.
+
+Os 11 de `TransferenciaTest` cobrem a transferência: o caso muda de mãos e continua em atendimento, o tempo de espera não é zerado, o gestor transfere caso de outro e fica registrado como autor, atendente comum não transfere caso alheio, ticket na fila ou encerrado é recusado, destino igual ao atual ou fora de serviço é recusado, motivo obrigatório com até 280 caracteres, e transferências em sequência. As regras estão em [transferencia.md](transferencia.md).
