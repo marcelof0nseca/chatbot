@@ -97,6 +97,70 @@ public class Ticket {
         this.status = StatusTicket.EM_ATENDIMENTO;
     }
 
+    /**
+     * Passa o caso em atendimento para outro atendente, sem devolve-lo a fila.
+     * O cliente continua com um humano: o status segue EM_ATENDIMENTO, a
+     * conversa segue COM_ATENDENTE e o assumidoEm original e preservado, para
+     * o tempo de espera do cliente nao ser zerado.
+     *
+     * Quem pode transferir: o atendente atual do caso ou um gestor.
+     *
+     * @return o registro da transferencia, que o servico grava junto com o ticket
+     */
+    public Transferencia transferirPara(Atendente quemTransfere, Atendente destino, String motivo) {
+        if (quemTransfere == null) {
+            throw new IllegalArgumentException("Quem transfere é obrigatório.");
+        }
+        if (destino == null) {
+            throw new IllegalArgumentException("O atendente de destino é obrigatório.");
+        }
+        String motivoLimpo = (motivo == null) ? "" : motivo.trim();
+        if (motivoLimpo.isEmpty()) {
+            throw new IllegalArgumentException("O motivo da transferência é obrigatório.");
+        }
+        if (motivoLimpo.length() > Transferencia.TAMANHO_MAXIMO_DO_MOTIVO) {
+            throw new IllegalArgumentException("O motivo da transferência passa de "
+                    + Transferencia.TAMANHO_MAXIMO_DO_MOTIVO + " caracteres.");
+        }
+        if (status != StatusTicket.EM_ATENDIMENTO) {
+            throw new IllegalStateException(
+                    "Apenas um ticket em atendimento pode ser transferido.");
+        }
+        boolean ehOAtual = mesmoAtendente(quemTransfere, atendente);
+        if (!ehOAtual && quemTransfere.getPerfil() != PerfilAtendente.GESTOR) {
+            throw new IllegalStateException(
+                    "Só o atendente do caso ou um gestor pode transferi-lo.");
+        }
+        if (mesmoAtendente(destino, atendente)) {
+            throw new IllegalStateException(
+                    "O caso já está com esse atendente.");
+        }
+        if (!destino.estaDisponivel()) {
+            throw new IllegalStateException(
+                    "O atendente de destino não está em serviço.");
+        }
+
+        Atendente origem = this.atendente;
+        conversa.atenderPor(destino);
+        this.atendente = destino;
+        return new Transferencia(this, origem, destino, quemTransfere, motivoLimpo);
+    }
+
+    /**
+     * Compara pelo id quando os dois ja foram gravados; antes disso, pela
+     * referencia. O Atendente nao define equals, e o JPA pode entregar
+     * instancias diferentes da mesma linha.
+     */
+    private static boolean mesmoAtendente(Atendente a, Atendente b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        if (a.getId() != null && b.getId() != null) {
+            return a.getId().equals(b.getId());
+        }
+        return a == b;
+    }
+
     public void resolver() {
         encerrar(StatusTicket.RESOLVIDO);
     }
