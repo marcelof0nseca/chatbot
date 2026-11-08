@@ -19,6 +19,7 @@ import com.wxn.chatbot.dominio.Cliente;
 import com.wxn.chatbot.dominio.Conversa;
 import com.wxn.chatbot.dominio.EstadoConversa;
 import com.wxn.chatbot.dominio.Mensagem;
+import com.wxn.chatbot.dominio.Relogio;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.Ticket;
 import com.wxn.chatbot.dominio.TipoCliente;
@@ -118,7 +119,7 @@ class FilaPersistenciaTest {
     @Test
     @DisplayName("Conversa em andamento com o bot não conta como resolvida")
     void contencaoContaSoEncerradas() {
-        LocalDateTime ontem = LocalDateTime.now().minusDays(1);
+        LocalDateTime ontem = Relogio.agora().minusDays(1);
         assertEquals(6, repositorio.contarConversasDesde(ontem));
         assertEquals(3, repositorio.contarConversasResolvidasPeloBotDesde(ontem));
 

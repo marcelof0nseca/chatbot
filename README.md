@@ -65,7 +65,7 @@ mesmo. Detalhes em [painel/README.md](painel/README.md).
 | Spring Boot | 4.1.1 — Web MVC, Data JPA |
 | Banco | H2 em arquivo (desenvolvimento) · PostgreSQL (produção, planejado) |
 | Build | Maven 3.9.16 via wrapper |
-| Fuso | `America/Recife`, fixo no código (`Relogio` e `Clock`), independente do fuso do servidor. Os testes rodam com a JVM em UTC |
+| Fuso | `America/Recife`, fixo no código (`Relogio` e `Clock`), independente do fuso do servidor. No banco, o deslocamento de 3h num servidor em UTC tinha duas causas, com duas correções: veja o bloco de fuso no `application.properties`. Os testes rodam com a JVM em UTC |
 
 O banco de desenvolvimento é o H2 em modo arquivo, gravando em `data/`, que não
 é versionado. Em produção será PostgreSQL: a nuvem recria o disco a cada deploy,
