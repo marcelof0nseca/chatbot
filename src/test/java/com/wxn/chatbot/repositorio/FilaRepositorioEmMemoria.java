@@ -11,6 +11,7 @@ import com.wxn.chatbot.dominio.Atendente;
 import com.wxn.chatbot.dominio.Conversa;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.Ticket;
+import com.wxn.chatbot.dominio.Transferencia;
 import com.wxn.chatbot.servico.FilaRepositorio;
 
 /**
@@ -23,6 +24,7 @@ public class FilaRepositorioEmMemoria implements FilaRepositorio {
     private final Map<Long, Ticket> tickets = new LinkedHashMap<>();
     private final Map<Long, Atendente> atendentes = new LinkedHashMap<>();
     private final List<Conversa> conversas = new ArrayList<>();
+    private final List<Transferencia> transferencias = new ArrayList<>();
 
     public void registrar(Conversa conversa) {
         conversas.add(conversa);
@@ -60,6 +62,19 @@ public class FilaRepositorioEmMemoria implements FilaRepositorio {
     @Override
     public void salvar(Ticket ticket) {
         tickets.put(ticket.getId(), ticket);
+    }
+
+    @Override
+    public void salvarTransferencia(Transferencia transferencia) {
+        transferencias.add(transferencia);
+    }
+
+    /** Em ordem de gravacao, que no duble e a mesma ordem cronologica. */
+    @Override
+    public List<Transferencia> listarTransferencias(Long ticketId) {
+        return transferencias.stream()
+                .filter(transferencia -> transferencia.getTicket().getId().equals(ticketId))
+                .toList();
     }
 
     @Override

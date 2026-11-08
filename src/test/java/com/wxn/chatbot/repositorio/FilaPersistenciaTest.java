@@ -63,12 +63,14 @@ class FilaPersistenciaTest {
     }
 
     @Test
-    @DisplayName("A fila vem do banco, com o caso mais antigo no topo")
+    @DisplayName("A fila vem do banco: quem aguarda, do mais antigo ao mais novo, e depois quem está em atendimento")
     void filaVemDoBanco() {
         List<ItemDaFila> fila = servico.listarFila();
 
-        assertEquals(List.of(1001L, 1002L, 1003L), fila.stream().map(ItemDaFila::ticketId).toList());
-        fila.forEach(item -> assertEquals(StatusTicket.ABERTO, item.status()));
+        assertEquals(List.of(1001L, 1002L, 1003L, 1004L), fila.stream().map(ItemDaFila::ticketId).toList());
+        fila.subList(0, 3).forEach(item -> assertEquals(StatusTicket.ABERTO, item.status()));
+        assertEquals(StatusTicket.EM_ATENDIMENTO, fila.get(3).status());
+        assertEquals("Bruno Dias", fila.get(3).atendente());
     }
 
     @Test
@@ -103,7 +105,7 @@ class FilaPersistenciaTest {
         em.clear();
 
         List<Long> ordem = servico.listarFila().stream().map(ItemDaFila::ticketId).toList();
-        assertEquals(List.of(1002L, 1003L, 1001L), ordem);
+        assertEquals(List.of(1002L, 1003L, 1001L, 1004L), ordem);
     }
 
     @Test
@@ -120,7 +122,7 @@ class FilaPersistenciaTest {
     @DisplayName("Conversa em andamento com o bot não conta como resolvida")
     void contencaoContaSoEncerradas() {
         LocalDateTime ontem = Relogio.agora().minusDays(1);
-        assertEquals(6, repositorio.contarConversasDesde(ontem));
+        assertEquals(7, repositorio.contarConversasDesde(ontem));
         assertEquals(3, repositorio.contarConversasResolvidasPeloBotDesde(ontem));
 
         Cliente cliente = new Cliente(null, "Teste", "5581911112222", TipoCliente.EXTERNO);
@@ -129,7 +131,7 @@ class FilaPersistenciaTest {
         em.persist(new Conversa(null, cliente));
         em.flush();
 
-        assertEquals(7, repositorio.contarConversasDesde(ontem));
+        assertEquals(8, repositorio.contarConversasDesde(ontem));
         assertEquals(3, repositorio.contarConversasResolvidasPeloBotDesde(ontem));
         assertEquals(3, conversas.countByIniciadaEmAfterAndEstadoAndTicketIsNull(ontem, EstadoConversa.ENCERRADA));
     }

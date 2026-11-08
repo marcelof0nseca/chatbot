@@ -11,6 +11,7 @@ import com.wxn.chatbot.dominio.Atendente;
 import com.wxn.chatbot.dominio.EstadoConversa;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.Ticket;
+import com.wxn.chatbot.dominio.Transferencia;
 import com.wxn.chatbot.servico.FilaRepositorio;
 
 /**
@@ -24,12 +25,14 @@ public class FilaRepositorioJpa implements FilaRepositorio {
     private final TicketRepository tickets;
     private final ConversaRepository conversas;
     private final AtendenteRepository atendentes;
+    private final TransferenciaRepository transferencias;
 
     public FilaRepositorioJpa(TicketRepository tickets, ConversaRepository conversas,
-                              AtendenteRepository atendentes) {
+                              AtendenteRepository atendentes, TransferenciaRepository transferencias) {
         this.tickets = tickets;
         this.conversas = conversas;
         this.atendentes = atendentes;
+        this.transferencias = transferencias;
     }
 
     @Override
@@ -55,6 +58,16 @@ public class FilaRepositorioJpa implements FilaRepositorio {
     @Override
     public void salvar(Ticket ticket) {
         tickets.save(ticket);
+    }
+
+    @Override
+    public void salvarTransferencia(Transferencia transferencia) {
+        transferencias.save(transferencia);
+    }
+
+    @Override
+    public List<Transferencia> listarTransferencias(Long ticketId) {
+        return transferencias.findByTicketIdOrderByRealizadaEmAscIdAsc(ticketId);
     }
 
     @Override

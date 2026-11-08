@@ -7,6 +7,7 @@ import java.util.Optional;
 import com.wxn.chatbot.dominio.Atendente;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.Ticket;
+import com.wxn.chatbot.dominio.Transferencia;
 
 /**
  * Porta de acesso a dados da fila. Quem consome declara o que precisa, e a
@@ -27,6 +28,11 @@ public interface FilaRepositorio {
     List<Atendente> listarAtendentes();
 
     void salvar(Ticket ticket);
+
+    void salvarTransferencia(Transferencia transferencia);
+
+    /** As transferencias de um caso, da mais antiga para a mais recente. */
+    List<Transferencia> listarTransferencias(Long ticketId);
 
     long contarConversasDesde(LocalDateTime inicio);
 
