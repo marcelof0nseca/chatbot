@@ -1,7 +1,7 @@
 # Modelo de Dados — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**10 tabelas · 67 colunas** · DDL em [schema.sql](schema.sql), validado em H2 2.4
+**11 tabelas · 74 colunas** · DDL em [schema.sql](schema.sql), validado em H2 2.4
 
 ---
 
@@ -13,7 +13,7 @@
 | **Nomes** | `snake_case`, tabela no singular | Padrão que o PostgreSQL trata sem precisar de aspas |
 | **Carimbos de tempo** | `criado_em` e `atualizado_em` em toda tabela de entidade | Auditoria e diagnóstico. Tabelas de evento usam o nome do fato: `enviada_em`, `aberto_em`, `aceito_em` |
 | **Enums** | `VARCHAR` + `CHECK` | O banco recusa valor fora da lista, e o JPA mapeia direto com `@Enumerated(STRING)`. Guardar o número do enum quebraria se a ordem mudasse |
-| **Fuso** | Tudo gravado em UTC, convertido para `America/Sao_Paulo` na aplicação | Servidor em nuvem roda em UTC |
+| **Fuso** | Horários gravados como hora local de Recife (`America/Recife`), sem fuso na coluna | O servidor em nuvem roda em UTC; a aplicação fixa a zona no `Relogio` e no H2 (`TIME ZONE`), e o Hibernate grava sem converter pela JVM. As duas causas e as correções estão no `application.properties` |
 | **Exclusão** | Sem `DELETE` em `mensagem` | Histórico de atendimento não se reescreve. O expurgo da LGPD apaga a conversa inteira |
 
 ---
@@ -32,6 +32,7 @@
 | 8 | `ticket` | 4 | A fila de atendimento humano |
 | 9 | `horario_atendimento` | 3 | Expediente por dia da semana |
 | 10 | `feriado` | 3 | Calendário nacional importado + feriados da empresa |
+| 11 | `transferencia` | 4 | O caminho de um caso entre atendentes, sem voltar à fila |
 
 ---
 
@@ -174,6 +175,22 @@ Os três carimbos não são redundantes: são as duas métricas que o painel mos
 
 `origem` separa o que a tarefa anual pode sobrescrever do que foi cadastrado à mão e precisa ser preservado.
 
+### 3.11 `transferencia`
+
+| Coluna | Tipo | Nulo | Chave | Regra |
+|---|---|---|---|---|
+| `id` | BIGINT | não | PK | |
+| `ticket_id` | BIGINT | não | FK → ticket | Um ticket pode ter várias transferências |
+| `origem_id` | BIGINT | não | FK → atendente | Quem estava com o caso. `CHECK` garante que é diferente do destino |
+| `destino_id` | BIGINT | não | FK → atendente | Quem ficou com o caso. É o novo `ticket.atendente_id` |
+| `realizada_por_id` | BIGINT | não | FK → atendente | Quem decidiu: o próprio atendente do caso ou um gestor |
+| `motivo` | VARCHAR(280) | não | | Obrigatório, para quem recebe saber por que o caso chegou |
+| `realizada_em` | TIMESTAMP | não | | |
+
+O ticket guarda só o atendente atual, e o caminho fica aqui. Assim o `assumido_em` do ticket continua sendo o momento em que o cliente saiu da fila: transferir não zera o tempo de espera. Como a `mensagem`, a linha não sofre `UPDATE` nem `DELETE`.
+
+`realizada_por_id` existe porque nem sempre quem transfere é a origem: o gestor pode redistribuir um caso que não é dele, e a trilha precisa dizer quem tomou a decisão.
+
 ---
 
 ## 4. Como o contexto da conversa será salvo
@@ -225,8 +242,8 @@ Aqui está a origem de cada coluna: nenhuma existe por precaução, todas atende
 |---|---|---|
 | **Cliente externo** | Ser reconhecido pelo telefone, ter o consentimento registrado, receber resposta da base e saber quando será atendido | `cliente`, `consentimento`, `conversa`, `mensagem`, `horario_atendimento`, `feriado` |
 | **Colaborador interno** | O mesmo, mais acesso a artigos marcados como internos | As acima + `artigo_conhecimento.publico` |
-| **Atendente** | Ver a fila ordenada por espera, abrir a conversa com o histórico completo e saber por que o caso foi escalonado | `ticket`, `conversa`, `mensagem`, `atendente` |
-| **Gestor** | Tudo do atendente, mais editar a base de conhecimento, o expediente e os feriados | As acima + `artigo_conhecimento`, `artigo_variacao`, `horario_atendimento`, `feriado` |
+| **Atendente** | Ver a fila ordenada por espera, abrir a conversa com o histórico completo, saber por que o caso foi escalonado e passar o caso a um colega com o motivo | `ticket`, `conversa`, `mensagem`, `atendente`, `transferencia` |
+| **Gestor** | Tudo do atendente, mais redistribuir casos de qualquer atendente e editar a base de conhecimento, o expediente e os feriados | As acima + `artigo_conhecimento`, `artigo_variacao`, `horario_atendimento`, `feriado` |
 
 Duas colunas existem só por causa do painel, e vale dizer isso em voz alta: `ticket.assumido_em` e `ticket.encerrado_em` dão as duas métricas de tempo sem nenhuma tabela de apoio. E `mensagem.confianca` existe para o atendente entender, em um segundo, por que o caso chegou até ele.
 
@@ -263,12 +280,14 @@ Em desenvolvimento o Hibernate gera essas tabelas a partir das entidades (`ddl-a
 O DDL foi executado contra o H2 2.4.240 e as restrições foram testadas:
 
 ```
-10 tabelas criadas, 67 colunas
-INSERT do fluxo completo (cliente → consentimento → conversa → mensagem → ticket): OK
+11 tabelas criadas, 74 colunas
+INSERT do fluxo completo (cliente → consentimento → conversa → mensagem → ticket → transferencia): OK
 
 estado 'PENSANDO'          → Check constraint violation: CK_CONVERSA_ESTADO
 id_externo repetido        → Unique index violation: UK_MENSAGEM_ID_EXTERNO
 confianca = 1.5            → Check constraint violation: CK_MENSAGEM_CONFIANCA
+origem = destino           → Check constraint violation: CK_TRANSFERENCIA_DESTINO
+destino inexistente        → Referential integrity constraint violation: FK_TRANSFERENCIA_DESTINO
 ```
 
 O segundo teste é o mais relevante na prática: ele simula o reenvio do webhook pela Meta e confirma que a mensagem duplicada é recusada pelo banco, e não pela aplicação.

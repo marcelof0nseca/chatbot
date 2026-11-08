@@ -10,9 +10,11 @@ import com.wxn.chatbot.dominio.Cliente;
 import com.wxn.chatbot.dominio.Conversa;
 import com.wxn.chatbot.dominio.Mensagem;
 import com.wxn.chatbot.dominio.Ticket;
+import com.wxn.chatbot.dominio.Transferencia;
 import com.wxn.chatbot.dto.AtendenteResumo;
 import com.wxn.chatbot.dto.ConversaDoAtendimento;
 import com.wxn.chatbot.dto.MensagemDoHistorico;
+import com.wxn.chatbot.dto.TransferenciaDoHistorico;
 
 /**
  * Leitura da conversa de um caso (Tela 7) e da equipe que pode atende-lo.
@@ -39,12 +41,15 @@ public class AtendimentoService {
     @Transactional(readOnly = true)
     public ConversaDoAtendimento conversaDoTicket(Long ticketId) {
         Ticket ticket = repositorio.buscarTicket(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket não encontrado: " + ticketId));
+                .orElseThrow(() -> new NaoEncontradoException("Ticket não encontrado: " + ticketId));
         Conversa conversa = ticket.getConversa();
         Cliente cliente = conversa.getCliente();
 
         List<MensagemDoHistorico> historico = conversa.getMensagens().stream()
                 .map(AtendimentoService::paraHistorico)
+                .toList();
+        List<TransferenciaDoHistorico> transferencias = repositorio.listarTransferencias(ticket.getId()).stream()
+                .map(AtendimentoService::paraTrilha)
                 .toList();
 
         return new ConversaDoAtendimento(
@@ -59,7 +64,8 @@ public class AtendimentoService {
                 ticket.getAbertoEm(),
                 ticket.getAssumidoEm(),
                 cliente.getConsentimento() == null ? null : cliente.getConsentimento().getData(),
-                historico);
+                historico,
+                transferencias);
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +73,15 @@ public class AtendimentoService {
         return repositorio.listarAtendentes().stream()
                 .map(a -> new AtendenteResumo(a.getId(), a.getNome(), a.getPerfil().name(), a.estaDisponivel()))
                 .toList();
+    }
+
+    private static TransferenciaDoHistorico paraTrilha(Transferencia transferencia) {
+        return new TransferenciaDoHistorico(
+                transferencia.getOrigem().getNome(),
+                transferencia.getDestino().getNome(),
+                transferencia.getRealizadaPor().getNome(),
+                transferencia.getMotivo(),
+                transferencia.getRealizadaEm());
     }
 
     private static MensagemDoHistorico paraHistorico(Mensagem mensagem) {

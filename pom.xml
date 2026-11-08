@@ -12,7 +12,7 @@
 	<artifactId>chatbot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>chatbot</name>
-	<description>Backend do chatbot NXN</description>
+	<description>Back-end do Tino, chatbot de atendimento da WXN</description>
 	<url/>
 	<licenses>
 		<license/>

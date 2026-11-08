@@ -8,7 +8,9 @@ import com.wxn.chatbot.dominio.StatusTicket;
 /**
  * Tudo o que a Tela 7 precisa para o atendente seguir a conversa sem pedir
  * ao cliente que repita nada: o historico completo, o motivo do
- * encaminhamento e o momento em que o bot passou o caso adiante (abertoEm).
+ * encaminhamento, o momento em que o bot passou o caso adiante (abertoEm) e
+ * por quais atendentes o caso ja passou (transferencias, da mais antiga para
+ * a mais recente; vazia se o caso nunca mudou de maos).
  *
  * Como na fila, o telefone sai mascarado.
  */
@@ -24,5 +26,6 @@ public record ConversaDoAtendimento(
         LocalDateTime abertoEm,
         LocalDateTime assumidoEm,
         LocalDateTime consentimentoEm,
-        List<MensagemDoHistorico> mensagens) {
+        List<MensagemDoHistorico> mensagens,
+        List<TransferenciaDoHistorico> transferencias) {
 }

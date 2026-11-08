@@ -1,6 +1,6 @@
 # Montagem dos Ambientes de Desenvolvimento e Deploy
 
-**Projeto:** Chatbot NXN
+**Projeto:** Tino, chatbot de atendimento da WXN
 **Repositório:** https://github.com/marcelof0nseca/chatbot
 **Data:** 04/09/2026
 

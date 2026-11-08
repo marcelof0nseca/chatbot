@@ -15,6 +15,7 @@ import com.wxn.chatbot.dominio.Conversa;
 import com.wxn.chatbot.dominio.Mensagem;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.Ticket;
+import com.wxn.chatbot.dominio.Transferencia;
 import com.wxn.chatbot.dto.ItemDaFila;
 import com.wxn.chatbot.dto.ResumoDaFila;
 
@@ -97,14 +98,50 @@ public class FilaDeConversasService {
      */
     @Transactional
     public ItemDaFila assumir(Long ticketId, Long atendenteId) {
-        Ticket ticket = repositorio.buscarTicket(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket não encontrado: " + ticketId));
-        Atendente atendente = repositorio.buscarAtendente(atendenteId)
-                .orElseThrow(() -> new IllegalArgumentException("Atendente não encontrado: " + atendenteId));
+        Ticket ticket = buscarTicket(ticketId);
+        Atendente atendente = buscarAtendente(atendenteId);
 
         ticket.assumir(atendente);
         repositorio.salvar(ticket);
         return paraItem(ticket);
+    }
+
+    /**
+     * Passa um caso em atendimento para outro atendente, sem devolve-lo a
+     * fila. As regras (quem pode transferir, para quem, com que motivo) sao
+     * do Ticket.transferirPara(); o servico busca, chama e grava.
+     *
+     * O ticket com o novo atendente e o registro da transferencia sao
+     * gravados na mesma transacao: nao existe caso transferido sem registro,
+     * nem registro de uma transferencia que nao aconteceu.
+     */
+    @Transactional
+    public ItemDaFila transferir(Long ticketId, Long quemTransfereId, Long destinoId, String motivo) {
+        Ticket ticket = buscarTicket(ticketId);
+        Atendente quemTransfere = buscarAtendente(quemTransfereId);
+        Atendente destino = buscarAtendente(destinoId);
+
+        Transferencia transferencia = ticket.transferirPara(quemTransfere, destino, motivo);
+        repositorio.salvar(ticket);
+        repositorio.salvarTransferencia(transferencia);
+        return paraItem(ticket);
+    }
+
+    private Ticket buscarTicket(Long ticketId) {
+        if (ticketId == null) {
+            throw new IllegalArgumentException("O ticket é obrigatório.");
+        }
+        return repositorio.buscarTicket(ticketId)
+                .orElseThrow(() -> new NaoEncontradoException("Ticket não encontrado: " + ticketId));
+    }
+
+    /** Id nulo e dado invalido (400), e nao atendente inexistente (404). */
+    private Atendente buscarAtendente(Long atendenteId) {
+        if (atendenteId == null) {
+            throw new IllegalArgumentException("Atendente é obrigatório.");
+        }
+        return repositorio.buscarAtendente(atendenteId)
+                .orElseThrow(() -> new NaoEncontradoException("Atendente não encontrado: " + atendenteId));
     }
 
     private Stream<Ticket> porAntiguidade(StatusTicket status) {
