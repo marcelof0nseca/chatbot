@@ -50,7 +50,8 @@ class ApiDoPainelTest {
         return new ConversaDoAtendimento(1001L, 1001L, "*********4821", "EXTERNO", "AGUARDANDO_ATENDENTE",
                 StatusTicket.ABERTO, "BAIXA_CONFIANCA", null, ABERTO_EM, null, ABERTO_EM.minusMinutes(2),
                 List.of(new MensagemDoHistorico("CLIENTE", "*********4821", "oi, tenho uma dúvida",
-                        ABERTO_EM.minusMinutes(2))));
+                        ABERTO_EM.minusMinutes(2))),
+                List.of());
     }
 
     @Test

@@ -22,6 +22,7 @@ import com.wxn.chatbot.dominio.PerfilAtendente;
 import com.wxn.chatbot.dominio.Relogio;
 import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dominio.TipoCliente;
+import com.wxn.chatbot.dominio.Transferencia;
 import com.wxn.chatbot.dto.ItemDaFila;
 import com.wxn.chatbot.dto.ResumoDaFila;
 import com.wxn.chatbot.repositorio.FilaRepositorioEmMemoria;
@@ -195,5 +196,102 @@ class FilaDeConversasServiceTest {
         assertEquals(1, resumo.total());
         assertEquals(0, resumo.resolvidasPeloBot());
         assertEquals(0.0, resumo.taxaContencao(), 0.0001);
+    }
+
+    // Transferencia (segunda historia do Epico 4)
+
+    private Atendente emServico(Long id, String nome, PerfilAtendente perfil) {
+        Atendente atendente = new Atendente(id, nome, nome.split(" ")[0].toLowerCase() + "@wxn.com.br", perfil);
+        atendente.entrarEmServico();
+        repositorio.registrar(atendente);
+        return atendente;
+    }
+
+    @Test
+    @DisplayName("Transferir passa o caso ao destino e grava o registro da transferência")
+    void transferirGravaOsDois() {
+        Atendente carla = emServico(3L, "Carla Melo", PerfilAtendente.ATENDENTE);
+        Conversa conversa = escalonar(1L, "5581999990001", "segunda via do boleto",
+                MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+
+        ItemDaFila item = servico.transferir(1L, bruno.getId(), carla.getId(), "Assunto do financeiro");
+
+        assertEquals(StatusTicket.EM_ATENDIMENTO, item.status());
+        assertEquals("Carla Melo", item.atendente());
+        assertEquals(EstadoConversa.COM_ATENDENTE, conversa.getEstado());
+
+        List<Transferencia> caminho = repositorio.listarTransferencias(1L);
+        assertEquals(1, caminho.size());
+        assertEquals("Bruno Dias", caminho.get(0).getOrigem().getNome());
+        assertEquals("Carla Melo", caminho.get(0).getDestino().getNome());
+        assertEquals("Assunto do financeiro", caminho.get(0).getMotivo());
+    }
+
+    @Test
+    @DisplayName("O caso transferido continua em atendimento, sem voltar para a fila")
+    void transferidoNaoVoltaParaAFila() {
+        Atendente carla = emServico(3L, "Carla Melo", PerfilAtendente.ATENDENTE);
+        escalonar(1L, "5581999990001", "segunda via do boleto", MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+        servico.transferir(1L, bruno.getId(), carla.getId(), "Assunto do financeiro");
+
+        ResumoDaFila resumo = servico.resumoDoDia();
+
+        assertEquals(0, resumo.naFila());
+        assertEquals(1, resumo.emAtendimento());
+    }
+
+    @Test
+    @DisplayName("Ticket, autor ou destino inexistente é recusado como não encontrado")
+    void transferirInexistente() {
+        escalonar(1L, "5581999990001", "segunda via do boleto", MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+
+        assertThrows(NaoEncontradoException.class, () -> servico.transferir(99L, 1L, 1L, "x"));
+        assertThrows(NaoEncontradoException.class, () -> servico.transferir(1L, 99L, 1L, "x"));
+        assertThrows(NaoEncontradoException.class, () -> servico.transferir(1L, 1L, 99L, "x"));
+        assertTrue(repositorio.listarTransferencias(1L).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Id ausente é dado inválido, e não registro inexistente")
+    void transferirSemId() {
+        escalonar(1L, "5581999990001", "segunda via do boleto", MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+
+        assertThrows(IllegalArgumentException.class, () -> servico.transferir(null, 1L, 1L, "x"));
+        assertThrows(IllegalArgumentException.class, () -> servico.transferir(1L, null, 1L, "x"));
+        assertThrows(IllegalArgumentException.class, () -> servico.transferir(1L, 1L, null, "x"));
+    }
+
+    @Test
+    @DisplayName("Transferência recusada pelo domínio não deixa registro nem muda o caso")
+    void recusadaNaoGrava() {
+        Atendente carla = emServico(3L, "Carla Melo", PerfilAtendente.ATENDENTE);
+        escalonar(1L, "5581999990001", "segunda via do boleto", MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+
+        assertThrows(IllegalStateException.class,
+                () -> servico.transferir(1L, carla.getId(), carla.getId(), "Quero esse caso"));
+        assertThrows(IllegalArgumentException.class,
+                () -> servico.transferir(1L, bruno.getId(), carla.getId(), " "));
+
+        assertTrue(repositorio.listarTransferencias(1L).isEmpty());
+        assertEquals("Bruno Dias", servico.listarFila().get(0).atendente());
+    }
+
+    @Test
+    @DisplayName("O gestor redistribui um caso que não é dele")
+    void gestorRedistribui() {
+        Atendente ana = emServico(2L, "Ana Lima", PerfilAtendente.GESTOR);
+        Atendente carla = emServico(3L, "Carla Melo", PerfilAtendente.ATENDENTE);
+        escalonar(1L, "5581999990001", "segunda via do boleto", MotivoEscalonamento.ASSUNTO_NAO_SUPORTADO);
+        servico.assumir(1L, bruno.getId());
+
+        ItemDaFila item = servico.transferir(1L, ana.getId(), carla.getId(), "Bruno saiu do turno");
+
+        assertEquals("Carla Melo", item.atendente());
+        assertEquals("Ana Lima", repositorio.listarTransferencias(1L).get(0).getRealizadaPor().getNome());
     }
 }

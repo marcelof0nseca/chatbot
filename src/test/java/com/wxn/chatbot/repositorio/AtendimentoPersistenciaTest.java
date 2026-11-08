@@ -19,6 +19,7 @@ import com.wxn.chatbot.dominio.StatusTicket;
 import com.wxn.chatbot.dto.AtendenteResumo;
 import com.wxn.chatbot.dto.ConversaDoAtendimento;
 import com.wxn.chatbot.dto.MensagemDoHistorico;
+import com.wxn.chatbot.dto.TransferenciaDoHistorico;
 import com.wxn.chatbot.servico.AtendimentoService;
 import com.wxn.chatbot.servico.FilaDeConversasService;
 import com.wxn.chatbot.servico.NaoEncontradoException;
@@ -79,6 +80,7 @@ class AtendimentoPersistenciaTest {
         assertNull(conversa.atendente());
         assertNull(conversa.assumidoEm());
         assertNotNull(conversa.consentimentoEm());
+        assertTrue(conversa.transferencias().isEmpty());
     }
 
     @Test
@@ -110,5 +112,53 @@ class AtendimentoPersistenciaTest {
         assertEquals(List.of("Ana Lima", "Bruno Dias"), equipe.stream().map(AtendenteResumo::nome).toList());
         assertTrue(equipe.stream().allMatch(AtendenteResumo::disponivel));
         assertEquals("GESTOR", equipe.get(0).perfil());
+    }
+
+    @Test
+    @DisplayName("Caso transferido mostra o atendente atual e o caminho, com o motivo")
+    void casoTransferido() {
+        ConversaDoAtendimento conversa = atendimento.conversaDoTicket(1004L);
+
+        assertEquals("Bruno Dias", conversa.atendente());
+        assertEquals(1, conversa.transferencias().size());
+        TransferenciaDoHistorico transferencia = conversa.transferencias().get(0);
+        assertEquals("Ana Lima", transferencia.de());
+        assertEquals("Bruno Dias", transferencia.para());
+        assertEquals("Ana Lima", transferencia.realizadaPor());
+        assertTrue(transferencia.motivo().startsWith("Segunda via de boleto"));
+        assertEquals(List.of("CLIENTE", "CHATBOT", "ATENDENTE", "ATENDENTE"),
+                conversa.mensagens().stream().map(MensagemDoHistorico::autor).toList());
+        assertEquals("Ana Lima", conversa.mensagens().get(2).identificacao());
+    }
+
+    @Test
+    @DisplayName("Transferir pelo serviço grava ticket e registro juntos, e a Tela 7 já mostra")
+    void transferirPeloServico() {
+        fila.transferir(1004L, 1001L, 1002L, "Cliente quer negociar desconto, decisão da gestão");
+        em.flush();
+        em.clear();
+
+        ConversaDoAtendimento conversa = atendimento.conversaDoTicket(1004L);
+
+        assertEquals(StatusTicket.EM_ATENDIMENTO, conversa.status());
+        assertEquals("COM_ATENDENTE", conversa.estadoConversa());
+        assertEquals("Ana Lima", conversa.atendente());
+        assertEquals(List.of("Ana Lima", "Bruno Dias"),
+                conversa.transferencias().stream().map(TransferenciaDoHistorico::de).toList());
+    }
+
+    @Test
+    @DisplayName("Transferência recusada não grava nada: o caso fica com quem estava")
+    void transferenciaRecusada() {
+        fila.assumir(1001L, 1001L);
+        em.flush();
+        em.clear();
+
+        assertThrows(IllegalStateException.class, () -> fila.transferir(1001L, 1001L, 1001L, "Encaminhar"));
+        em.clear();
+
+        ConversaDoAtendimento conversa = atendimento.conversaDoTicket(1001L);
+        assertEquals("Bruno Dias", conversa.atendente());
+        assertTrue(conversa.transferencias().isEmpty());
     }
 }
