@@ -140,8 +140,8 @@ class FilaDeConversasServiceTest {
     void assumirInexistente() {
         escalonar(1L, "5581999990001", "cobrança duplicada", MotivoEscalonamento.BAIXA_CONFIANCA);
 
-        assertThrows(IllegalArgumentException.class, () -> servico.assumir(99L, bruno.getId()));
-        assertThrows(IllegalArgumentException.class, () -> servico.assumir(1L, 99L));
+        assertThrows(NaoEncontradoException.class, () -> servico.assumir(99L, bruno.getId()));
+        assertThrows(NaoEncontradoException.class, () -> servico.assumir(1L, 99L));
     }
 
     @Test

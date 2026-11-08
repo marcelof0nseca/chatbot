@@ -98,9 +98,9 @@ public class FilaDeConversasService {
     @Transactional
     public ItemDaFila assumir(Long ticketId, Long atendenteId) {
         Ticket ticket = repositorio.buscarTicket(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket não encontrado: " + ticketId));
+                .orElseThrow(() -> new NaoEncontradoException("Ticket não encontrado: " + ticketId));
         Atendente atendente = repositorio.buscarAtendente(atendenteId)
-                .orElseThrow(() -> new IllegalArgumentException("Atendente não encontrado: " + atendenteId));
+                .orElseThrow(() -> new NaoEncontradoException("Atendente não encontrado: " + atendenteId));
 
         ticket.assumir(atendente);
         repositorio.salvar(ticket);

@@ -21,6 +21,7 @@ import com.wxn.chatbot.dto.ConversaDoAtendimento;
 import com.wxn.chatbot.dto.MensagemDoHistorico;
 import com.wxn.chatbot.servico.AtendimentoService;
 import com.wxn.chatbot.servico.FilaDeConversasService;
+import com.wxn.chatbot.servico.NaoEncontradoException;
 
 import jakarta.persistence.EntityManager;
 
@@ -98,7 +99,7 @@ class AtendimentoPersistenciaTest {
     @Test
     @DisplayName("Ticket inexistente é recusado")
     void ticketInexistente() {
-        assertThrows(IllegalArgumentException.class, () -> atendimento.conversaDoTicket(99L));
+        assertThrows(NaoEncontradoException.class, () -> atendimento.conversaDoTicket(99L));
     }
 
     @Test

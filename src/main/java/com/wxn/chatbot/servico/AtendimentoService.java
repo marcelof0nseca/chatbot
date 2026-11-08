@@ -39,7 +39,7 @@ public class AtendimentoService {
     @Transactional(readOnly = true)
     public ConversaDoAtendimento conversaDoTicket(Long ticketId) {
         Ticket ticket = repositorio.buscarTicket(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket não encontrado: " + ticketId));
+                .orElseThrow(() -> new NaoEncontradoException("Ticket não encontrado: " + ticketId));
         Conversa conversa = ticket.getConversa();
         Cliente cliente = conversa.getCliente();
 
