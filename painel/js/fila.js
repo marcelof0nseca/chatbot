@@ -72,6 +72,15 @@ function desenharResumo(resumo) {
 
 // ---------- casos ----------
 
+/** "Bruno Dias" vira "BD": identifica de relance quem esta com o caso. */
+function iniciais(nome) {
+  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  const primeira = partes[0][0];
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
+
 function caso(item) {
   const aguardando = item.status === "ABERTO";
   const { numero, unidade } = partesDaEspera(item.esperaEmSegundos);
@@ -80,6 +89,7 @@ function caso(item) {
 
   const acao = aguardando
     ? [
+        el("a", { class: "acao-texto", href: linkConversa }, "Ver conversa"),
         el(
           "button",
           {
@@ -89,9 +99,16 @@ function caso(item) {
           },
           "Assumir",
         ),
-        el("a", { href: linkConversa }, "Ver conversa"),
       ]
-    : [el("span", { class: "com-quem" }, `com ${item.atendente}`), el("a", { class: "link-acao", href: linkConversa }, "Abrir conversa")];
+    : [
+        el(
+          "span",
+          { class: "com-quem" },
+          el("span", { class: "iniciais", "aria-hidden": "true" }, iniciais(item.atendente)),
+          `com ${item.atendente}`,
+        ),
+        el("a", { class: "botao-secundario", href: linkConversa }, "Abrir conversa"),
+      ];
 
   return el(
     "li",
