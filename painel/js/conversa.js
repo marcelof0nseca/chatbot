@@ -1,7 +1,8 @@
-// Tela 7: conversa de um caso. Consome GET /api/fila/{ticketId}/conversa
-// e, se o caso ainda estiver na fila, POST /api/fila/{ticketId}/assumir.
+// Tela 7: conversa de um caso. Consome GET /api/fila/{ticketId}/conversa,
+// se o caso ainda estiver na fila, POST /api/fila/{ticketId}/assumir,
+// e, se ele estiver em atendimento, POST /api/fila/{ticketId}/transferir.
 
-import { api, el, motivo, contato, hora, dia, montarSeletorDeAtendente } from "./api.js";
+import { api, API, ErroDaApi, el, motivo, contato, hora, dia, montarSeletorDeAtendente } from "./api.js";
 
 const $conteudo = document.getElementById("conteudo");
 const $aviso = document.getElementById("aviso");
@@ -14,6 +15,16 @@ let atendenteEscolhido = () => null;
 const AUTORES = { CLIENTE: "Cliente", CHATBOT: "Tino" };
 const CLASSES = { CLIENTE: "de-cliente", CHATBOT: "de-bot", ATENDENTE: "de-atendente" };
 const TIPOS_DE_CLIENTE = { EXTERNO: "Cliente externo", INTERNO: "Colaborador interno" };
+
+const LIMITE_DO_MOTIVO = 280;
+
+// Estado do painel de transferencia. Vive fora de desenhar() porque a tela se
+// redesenha depois de cada chamada, e o que o atendente digitou nao pode se perder.
+let painelAberto = false;
+let equipe = [];
+let rascunho = { destinoId: "", motivo: "" };
+let erroDoMotivo = "";
+let enviando = false;
 
 function avisar(tipo, texto) {
   $aviso.replaceChildren(
@@ -64,6 +75,30 @@ function marco(conversa) {
   );
 }
 
+/** O nome, venha o atendente como texto ou como objeto. */
+const nomeDe = (quem) => (typeof quem === "string" ? quem : (quem?.nome ?? ""));
+
+/**
+ * Linha que marca uma transferencia, no ponto da conversa em que aconteceu.
+ * Se quem decidiu e quem tinha o caso, a frase e simples; se foi outra pessoa
+ * (um gestor), ela diz quem decidiu e de quem o caso saiu.
+ */
+function marcoDeTransferencia(t) {
+  const de = nomeDe(t.de);
+  const para = nomeDe(t.para);
+  const quem = nomeDe(t.realizadaPor) || de;
+  const frase =
+    quem === de
+      ? `${de} transferiu o caso para ${para} às ${hora(t.realizadaEm)}.`
+      : `${quem} transferiu o caso de ${de} para ${para} às ${hora(t.realizadaEm)}.`;
+  return el(
+    "li",
+    { class: "marco marco-transferencia" },
+    el("span", { class: "marco-titulo" }, frase),
+    t.motivo ? el("span", { class: "marco-motivo" }, `Motivo: ${t.motivo}`) : null,
+  );
+}
+
 /**
  * Onde entra o marco: depois da fala com que o Tino passa o caso adiante.
  * O bot abre o ticket e so entao grava essa fala, entao ela vem logo depois
@@ -78,14 +113,27 @@ function posicaoDoMarco(conversa) {
   return mensagens[depois].autor === "CHATBOT" ? depois + 1 : depois;
 }
 
-function historico(conversa) {
-  const itens = conversa.mensagens.map(mensagem);
-  if (conversa.abertoEm) itens.splice(posicaoDoMarco(conversa), 0, marco(conversa));
+/** Mensagens, marco do Tino e transferencias, na ordem em que aconteceram. */
+function linhaDoTempo(conversa) {
+  const itens = conversa.mensagens.map((m) => ({ quando: m.dataHora, no: mensagem(m) }));
+  if (conversa.abertoEm) itens.splice(posicaoDoMarco(conversa), 0, { quando: conversa.abertoEm, no: marco(conversa) });
 
+  // Da mais antiga para a mais recente, como a API entrega. Uma transferencia
+  // entra depois de tudo o que aconteceu antes ou no mesmo instante dela.
+  for (const t of conversa.transferencias ?? []) {
+    const antes = itens.findIndex((item) => item.quando > t.realizadaEm);
+    const entrada = { quando: t.realizadaEm, no: marcoDeTransferencia(t) };
+    if (antes === -1) itens.push(entrada);
+    else itens.splice(antes, 0, entrada);
+  }
+  return itens.map((item) => item.no);
+}
+
+function historico(conversa) {
   return el(
     "section",
     { class: "historico", "aria-label": "Histórico da conversa" },
-    el("ol", { class: "mensagens" }, ...itens),
+    el("ol", { class: "mensagens" }, ...linhaDoTempo(conversa)),
     el(
       "div",
       { class: "resposta" },
@@ -110,12 +158,18 @@ function linhaDaFicha(nome, valor) {
 }
 
 function ficha(conversa) {
-  const assumido = conversa.assumidoEm
-    ? `Às ${hora(conversa.assumidoEm)}, por ${conversa.atendente}`
-    : "Ainda não";
+  const transferencias = conversa.transferencias ?? [];
+  // Quem assumiu e quem tinha o caso antes da primeira transferencia.
+  const quemAssumiu = transferencias.length ? nomeDe(transferencias[0].de) : conversa.atendente;
+  const assumido = conversa.assumidoEm ? `Às ${hora(conversa.assumidoEm)}, por ${quemAssumiu}` : "Ainda não";
   const consentimento = conversa.consentimentoEm
     ? `Aceito às ${hora(conversa.consentimentoEm)} de ${dia(conversa.consentimentoEm)}`
     : "Não registrado";
+
+  const ultima = transferencias[transferencias.length - 1];
+  const transferido = ultima
+    ? `${transferencias.length} ${transferencias.length === 1 ? "vez" : "vezes"}, a última às ${hora(ultima.realizadaEm)}`
+    : null;
 
   return el(
     "aside",
@@ -129,22 +183,260 @@ function ficha(conversa) {
       ...linhaDaFicha("Motivo do encaminhamento", motivo(conversa.motivo)),
       ...linhaDaFicha("Na fila desde", `${hora(conversa.abertoEm)} de ${dia(conversa.abertoEm)}`),
       ...linhaDaFicha("Assumido", assumido),
+      ...(transferido ? linhaDaFicha("Transferido", transferido) : []),
       ...linhaDaFicha("Consentimento (LGPD)", consentimento),
     ),
   );
 }
 
+// ---------- transferencia ----------
+
+/** Quem pode receber o caso: em servico e diferente de quem ja esta com ele. */
+function destinosPossiveis(conversa) {
+  return equipe.filter((a) => a.disponivel && a.nome !== conversa.atendente);
+}
+
+function painelDeTransferencia(conversa) {
+  const destinos = destinosPossiveis(conversa);
+  if (!destinos.some((a) => String(a.id) === rascunho.destinoId)) rascunho.destinoId = "";
+
+  const $destino = el(
+    "select",
+    { id: "destino", name: "destino", disabled: destinos.length === 0 || enviando },
+    el("option", { value: "" }, destinos.length ? "Escolha quem vai receber o caso" : "Ninguém mais está em serviço agora"),
+    ...destinos.map((a) => el("option", { value: a.id, selected: String(a.id) === rascunho.destinoId }, a.nome)),
+  );
+
+  const $motivo = el("textarea", {
+    id: "motivo-transferencia",
+    name: "motivo",
+    rows: 3,
+    maxlength: LIMITE_DO_MOTIVO,
+    required: true,
+    disabled: enviando,
+    placeholder: "Ex.: cliente quer negociar desconto",
+    "aria-describedby": "motivo-ajuda",
+  });
+  $motivo.value = rascunho.motivo;
+
+  const $contador = el("span", { class: "campo-contador" });
+  const $ajuda = el(
+    "span",
+    { id: "motivo-ajuda", class: erroDoMotivo ? "campo-erro" : "" },
+    erroDoMotivo || "Quem receber lê isto no histórico.",
+  );
+  const $enviar = el("button", { class: "botao", type: "submit" }, enviando ? "Transferindo…" : "Transferir caso");
+  const $cancelar = el(
+    "button",
+    { class: "botao-secundario", type: "button", disabled: enviando, onclick: () => fecharPainel(true) },
+    "Cancelar",
+  );
+
+  function atualizar() {
+    rascunho.destinoId = $destino.value;
+    rascunho.motivo = $motivo.value;
+    $contador.textContent = `${$motivo.value.length} / ${LIMITE_DO_MOTIVO}`;
+    $enviar.disabled = enviando || !$destino.value || $motivo.value.trim() === "";
+  }
+  $destino.addEventListener("change", atualizar);
+  $motivo.addEventListener("input", () => {
+    if (erroDoMotivo) {
+      erroDoMotivo = "";
+      $ajuda.textContent = "Quem receber lê isto no histórico.";
+      $ajuda.className = "";
+      $motivo.removeAttribute("aria-invalid");
+    }
+    atualizar();
+  });
+  if (erroDoMotivo) $motivo.setAttribute("aria-invalid", "true");
+  atualizar();
+
+  const $painel = el(
+    "form",
+    { class: "transferencia", id: "transferencia", "aria-labelledby": "transferir-titulo", novalidate: true },
+    el("h2", { id: "transferir-titulo" }, "Transferir este caso"),
+    el("p", { class: "transferencia-nota" }, "O cliente continua em atendimento humano, sem voltar para a fila. A espera dele não zera."),
+    el("div", { class: "campo" }, el("label", { for: "destino" }, "Para quem"), $destino),
+    el(
+      "div",
+      { class: `campo${erroDoMotivo ? " com-erro" : ""}` },
+      el("label", { for: "motivo-transferencia" }, "Motivo da transferência ", el("span", { class: "campo-opcao" }, "(obrigatório)")),
+      $motivo,
+      el("p", { class: "campo-rodape" }, $ajuda, $contador),
+    ),
+    el("div", { class: "transferencia-acoes" }, $cancelar, $enviar),
+  );
+
+  $painel.addEventListener("submit", (e) => {
+    e.preventDefault();
+    transferir(conversa);
+  });
+  $painel.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !enviando) fecharPainel(true);
+  });
+  return $painel;
+}
+
+function fecharPainel(devolverFoco) {
+  painelAberto = false;
+  erroDoMotivo = "";
+  if (devolverFoco) {
+    $conteudo.querySelector("#transferencia")?.remove();
+    const botao = document.getElementById("botao-transferir");
+    botao?.setAttribute("aria-expanded", "false");
+    botao?.focus();
+  }
+}
+
+async function carregarEquipe() {
+  try {
+    equipe = await api.atendentes();
+  } catch {
+    equipe = [];
+  }
+}
+
+async function abrirPainel(conversa) {
+  if (painelAberto) {
+    fecharPainel(true);
+    return;
+  }
+  if (!atendenteEscolhido()) {
+    avisar("erro", "Escolha em “Atendendo como” quem está transferindo o caso.");
+    return;
+  }
+  await carregarEquipe();
+  painelAberto = true;
+  desenhar(conversa);
+  document.getElementById("destino")?.focus();
+}
+
+/** O POST da transferencia, com o mesmo tratamento de erro do restante da API. */
+async function postarTransferencia(corpo) {
+  let resposta;
+  try {
+    resposta = await fetch(`${API}/api/fila/${encodeURIComponent(ticketId)}/transferir`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    });
+  } catch {
+    throw new ErroDaApi(0, `Não foi possível falar com o servidor em ${API}.`);
+  }
+  if (!resposta.ok) {
+    let mensagemDeErro = `O servidor respondeu com o código ${resposta.status}.`;
+    try {
+      const dados = await resposta.json();
+      if (dados && dados.erro) mensagemDeErro = dados.erro;
+    } catch {
+      // corpo vazio ou nao-JSON: fica a mensagem com o codigo
+    }
+    throw new ErroDaApi(resposta.status, mensagemDeErro);
+  }
+  return resposta.json();
+}
+
+async function transferir(conversa) {
+  const quemTransfereId = Number(atendenteEscolhido());
+  if (!quemTransfereId) {
+    avisar("erro", "Escolha em “Atendendo como” quem está transferindo o caso.");
+    return;
+  }
+  const destinoId = Number(rascunho.destinoId);
+  const destino = equipe.find((a) => a.id === destinoId);
+  const texto = rascunho.motivo.trim();
+
+  erroDoMotivo = "";
+  enviando = true;
+  desenhar(conversa);
+  try {
+    await postarTransferencia({ quemTransfereId, destinoId, motivo: texto });
+    painelAberto = false;
+    rascunho = { destinoId: "", motivo: "" };
+    avisar("sucesso", `Caso transferido para ${destino?.nome ?? "o colega"}. A conversa agora está com ele.`);
+  } catch (erro) {
+    await tratarErroDaTransferencia(erro);
+  } finally {
+    enviando = false;
+  }
+  await carregar();
+  if (painelAberto) {
+    const campoComErro = erroDoMotivo ? "motivo-transferencia" : "destino";
+    document.getElementById(campoComErro)?.focus();
+  }
+}
+
+/** Decide, para cada tipo de erro, o que a pessoa le e o que fica na tela. */
+async function tratarErroDaTransferencia(erro) {
+  if (erro.status === 400) {
+    // O servidor repete a regra do motivo; a mensagem dele vai no proprio campo.
+    erroDoMotivo = erro.message;
+    return;
+  }
+  if (erro.status === 404) {
+    if (/^atendente/i.test(erro.message)) {
+      await carregarEquipe();
+      rascunho.destinoId = "";
+      avisar("erro", "Esse atendente não está mais disponível. Escolha outro e tente de novo.");
+    } else {
+      painelAberto = false;
+      avisar("erro", `${erro.message} A tela foi atualizada.`);
+    }
+    return;
+  }
+  if (erro.status === 409) {
+    let agora = null;
+    try {
+      agora = await api.conversa(ticketId);
+    } catch {
+      // sem conexao: cai na mensagem do servidor, abaixo
+    }
+    if (agora && agora.status !== "EM_ATENDIMENTO") {
+      painelAberto = false;
+      avisar("erro", "Este caso não está mais em atendimento. A tela foi atualizada.");
+      return;
+    }
+    await carregarEquipe();
+    const dica = /gestor/i.test(erro.message) ? " Em “Atendendo como”, escolha quem está com o caso ou um gestor." : "";
+    avisar("erro", `${erro.message}${dica}`);
+    return;
+  }
+  avisar("erro", `Não foi possível transferir: ${erro.message} Tente de novo em instantes.`);
+}
+
 function desenhar(conversa) {
   document.title = `Conversa com ${contato(conversa.contato)} | Tino`;
 
-  const partes = [
+  const emAtendimento = conversa.status === "EM_ATENDIMENTO";
+  if (!emAtendimento) painelAberto = false;
+
+  const topo = el(
+    "div",
+    { class: "conversa-topo" },
     el(
       "div",
-      { class: "conversa-topo" },
+      { class: "conversa-titulo" },
       el("h1", {}, `Conversa com ${contato(conversa.contato)}`),
       el("p", { class: "conversa-status" }, selo(conversa)),
     ),
-  ];
+    emAtendimento
+      ? el(
+          "button",
+          {
+            id: "botao-transferir",
+            class: "botao-secundario",
+            type: "button",
+            "aria-expanded": String(painelAberto),
+            "aria-controls": "transferencia",
+            onclick: () => abrirPainel(conversa),
+          },
+          el("span", { "aria-hidden": "true" }, "⇄"),
+          "Transferir",
+        )
+      : null,
+  );
+
+  const partes = [topo];
 
   if (conversa.status === "ABERTO") {
     partes.push(
@@ -156,6 +448,8 @@ function desenhar(conversa) {
       ),
     );
   }
+
+  if (emAtendimento && painelAberto) partes.push(painelDeTransferencia(conversa));
 
   partes.push(el("div", { class: "conversa-grade" }, historico(conversa), ficha(conversa)));
   $conteudo.replaceChildren(...partes);

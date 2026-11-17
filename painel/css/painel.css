@@ -598,6 +598,87 @@ label.resposta-nota { font-weight: 700; color: var(--tinta); }
   font-weight: 700;
 }
 
+/* ---------- transferencia (Tela 7) ---------- */
+
+.conversa-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.transferencia {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: var(--superficie);
+  border: 1.5px solid var(--tino);
+  border-radius: var(--raio);
+}
+
+.transferencia h2 { font-size: 1.05rem; }
+.transferencia-nota { margin-top: -0.6rem; color: var(--tinta-2); font-size: 0.95rem; }
+
+.campo label { display: block; margin-bottom: 0.3rem; font-weight: 700; }
+.campo-opcao { font-weight: 400; color: var(--tinta-2); }
+
+.campo select,
+.campo textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: var(--tinta);
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-p);
+  background: var(--superficie);
+}
+
+.campo select {
+  appearance: none;
+  min-height: 2.6rem;
+  padding-right: 2.25rem;
+  cursor: pointer;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356637b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 0.65rem center / 1rem,
+    var(--superficie);
+}
+
+.campo textarea { min-height: 5rem; resize: vertical; }
+.campo select:hover:not(:disabled), .campo textarea:hover:not(:disabled) { border-color: var(--tino); }
+.campo select:disabled, .campo textarea:disabled { cursor: not-allowed; color: var(--tinta-3); background-color: var(--fundo-2); }
+.campo textarea::placeholder { color: var(--tinta-3); }
+
+.campo.com-erro textarea { border-color: var(--erro); background: #fffafa; }
+
+.campo-rodape {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.3rem;
+  color: var(--tinta-2);
+  font-size: 0.9rem;
+}
+
+.campo-erro { color: var(--erro); font-weight: 700; }
+.campo-contador { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.transferencia-acoes { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+
+/* A transferencia na linha do tempo: a cor de "em atendimento", para nao
+   parecer fala do Tino (azul) nem de ninguem. */
+.marco.marco-transferencia {
+  border-color: var(--atendendo-borda);
+  background: var(--atendendo-claro);
+  color: var(--atendendo);
+}
+
+.marco-titulo { display: block; font-weight: 700; }
+.marco-motivo { display: block; margin-top: 0.15rem; overflow-wrap: anywhere; }
+
 /* ---------- telas estreitas ---------- */
 
 @media (max-width: 860px) {
@@ -617,6 +698,10 @@ label.resposta-nota { font-weight: 700; color: var(--tinta); }
   .mensagem { max-width: 92%; }
   .resposta { padding: 1rem; }
   .marca-sub { display: none; }
+  .conversa-topo .botao-secundario { width: 100%; }
+  .transferencia { padding: 1rem; }
+  .transferencia-acoes { flex-direction: column-reverse; }
+  .transferencia-acoes .botao, .transferencia-acoes .botao-secundario { width: 100%; }
 }
 
 @media (max-width: 420px) {
