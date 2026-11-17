@@ -7,6 +7,7 @@ que o atendente da WXN usa para ver a fila e as conversas encaminhadas pelo Tino
 |---|---|---|
 | `index.html` | Tela 6, fila de atendimento | `GET /api/fila`, `GET /api/fila/resumo`, `POST /api/fila/{id}/assumir`, `GET /api/atendentes` |
 | `conversa.html?ticket={id}` | Tela 7, conversa assumida | `GET /api/fila/{id}/conversa`, `POST /api/fila/{id}/assumir` |
+| `simulador.html` | Simulador do cliente: faz o papel do WhatsApp para criar casos na hora | `POST /api/simulador/mensagens`, `GET /api/simulador/conversa` |
 
 ## Como rodar
 

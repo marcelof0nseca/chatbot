@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador do cliente | Tino</title>
+  <link rel="icon" href="img/tino.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/painel.css?v=3">
+  <link rel="stylesheet" href="css/simulador.css?v=1">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="simulador.html">
+      <img src="img/tino.png" alt="" width="36" height="36">
+      <span class="marca-nome">Tino</span>
+      <span class="marca-sub">Simulador do cliente</span>
+    </a>
+    <a class="botao-secundario" href="index.html" target="_blank" rel="noopener">
+      Abrir o painel do atendente
+      <svg class="icone" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
+    </a>
+  </header>
+
+  <main class="pagina simulador">
+    <section class="simulador-explica">
+      <h1>Fale com o Tino como um cliente</h1>
+      <p>Esta página faz o papel do WhatsApp enquanto a integração com a Meta não chega. As mensagens vão para o mesmo serviço que o WhatsApp vai usar.</p>
+      <p>Quando o Tino não souber responder, o caso aparece na hora na fila do painel do atendente. Abra o painel em outra aba para acompanhar.</p>
+
+      <form id="inicio" class="simulador-inicio">
+        <label>Telefone do cliente
+          <input id="telefone" name="telefone" inputmode="tel" autocomplete="off" required>
+        </label>
+        <label>Nome
+          <input id="nome" name="nome" autocomplete="off" placeholder="Opcional">
+        </label>
+        <div class="simulador-inicio-acoes">
+          <button class="botao" type="submit">Começar conversa</button>
+          <button id="outro-numero" class="botao-secundario" type="button">Outro número</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="celular" aria-label="Conversa do cliente com o Tino">
+      <header class="celular-topo">
+        <img src="img/tino.png" alt="" width="36" height="36">
+        <div>
+          <p class="celular-nome">Tino · WXN</p>
+          <p id="situacao" class="celular-situacao">Escolha um telefone para começar</p>
+        </div>
+      </header>
+
+      <ol id="mensagens" class="celular-mensagens" aria-live="polite"></ol>
+
+      <div id="sugestoes" class="celular-sugestoes" hidden></div>
+
+      <form id="envio" class="celular-envio">
+        <label for="texto" class="sr-only">Mensagem</label>
+        <input id="texto" autocomplete="off" placeholder="Mensagem" disabled>
+        <button class="botao" type="submit" disabled aria-label="Enviar">
+          <svg class="icone" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/simulador.js"></script>
+</body>
+</html>

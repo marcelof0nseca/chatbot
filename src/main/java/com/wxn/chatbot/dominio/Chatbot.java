@@ -1,9 +1,12 @@
 package com.wxn.chatbot.dominio;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * O Tino. Tambem e um Remetente, porque assina as mensagens que envia.
@@ -22,6 +25,22 @@ public class Chatbot implements Remetente {
     public static final String TEXTO_FALLBACK =
             "Não tenho certeza sobre esse caso e prefiro não te dar uma resposta errada. "
             + "Vou te passar para um atendente, com o histórico desta conversa.";
+
+    public static final String TEXTO_APOS_ACEITE =
+            "Obrigado! Agora posso te ajudar. Qual é a sua dúvida?";
+
+    public static final String TEXTO_APOS_RECUSA =
+            "Tudo bem. Sem o seu aceite eu não consigo continuar o atendimento por aqui. "
+            + "Se mudar de ideia, é só responder SIM.";
+
+    /** Versao do aviso de privacidade que o cliente aceita ao responder SIM. */
+    public static final String VERSAO_DA_POLITICA = "v1";
+
+    /** Primeiras palavras que valem como aceite do aviso: "sim", "pode continuar", "aceito"... */
+    private static final Set<String> ACEITES =
+            Set.of("sim", "s", "aceito", "pode", "ok", "claro", "concordo", "autorizo", "yes");
+
+    private static final Set<String> RECUSAS = Set.of("nao", "n", "recuso", "no");
 
     private final String nome;
     private final String versao;
@@ -99,10 +118,16 @@ public class Chatbot implements Remetente {
                     "O bot não responde nesta conversa: estado " + conversa.getEstado() + ".");
         }
 
-        conversa.registrarMensagem(conversa.getCliente(), perguntaDoCliente);
+        Cliente cliente = conversa.getCliente();
+        boolean avisoJaEnviado = jaEnviouOAviso(conversa);
+        conversa.registrarMensagem(cliente, perguntaDoCliente);
 
-        if (!conversa.getCliente().consentiu()) {
-            return conversa.registrarMensagem(this, AVISO_PRIVACIDADE);
+        if (!cliente.consentiu()) {
+            return tratarConsentimento(conversa, perguntaDoCliente, avisoJaEnviado);
+        }
+        if (conversa.getEstado() == EstadoConversa.AGUARDANDO_CONSENTIMENTO) {
+            // O cliente aceitou numa conversa anterior: esta nao precisa pedir de novo.
+            conversa.liberarAposConsentimento();
         }
 
         Optional<RespostaCandidata> candidata =
@@ -119,6 +144,47 @@ public class Chatbot implements Remetente {
                 : MotivoEscalonamento.BAIXA_CONFIANCA;
         conversa.escalonar(motivo);
         return conversa.registrarMensagem(this, TEXTO_FALLBACK);
+    }
+
+    /**
+     * Sem consentimento, o bot so trata do aviso de privacidade (LGPD): manda
+     * o aviso e, depois dele, entende SIM como aceite e NAO como recusa.
+     * Qualquer outra fala, ou um "sim" antes do aviso, recebe o aviso de novo:
+     * ninguem consente sem ter lido o que esta aceitando.
+     */
+    private Mensagem tratarConsentimento(Conversa conversa, String fala, boolean avisoJaEnviado) {
+        if (avisoJaEnviado) {
+            String primeira = primeiraPalavra(fala);
+            if (ACEITES.contains(primeira)) {
+                conversa.getCliente().registrarConsentimento(VERSAO_DA_POLITICA);
+                conversa.liberarAposConsentimento();
+                return conversa.registrarMensagem(this, TEXTO_APOS_ACEITE);
+            }
+            if (RECUSAS.contains(primeira)) {
+                return conversa.registrarMensagem(this, TEXTO_APOS_RECUSA);
+            }
+        }
+        return conversa.registrarMensagem(this, AVISO_PRIVACIDADE);
+    }
+
+    private static boolean jaEnviouOAviso(Conversa conversa) {
+        return conversa.getMensagens().stream()
+                .anyMatch(m -> m.getRemetente() == TipoRemetente.CHATBOT
+                        && AVISO_PRIVACIDADE.equals(m.getConteudo()));
+    }
+
+    /** "Sim, pode!" vira "sim"; "Não." vira "nao". */
+    private static String primeiraPalavra(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        String normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .strip();
+        int espaco = normalizado.indexOf(' ');
+        return espaco == -1 ? normalizado : normalizado.substring(0, espaco);
     }
 
     public String getNome() {
