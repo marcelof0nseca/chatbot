@@ -84,7 +84,8 @@ public class AtendimentoService {
                 transferencia.getRealizadaEm());
     }
 
-    private static MensagemDoHistorico paraHistorico(Mensagem mensagem) {
+    /** Tambem usado pelo CanalDoClienteService: as duas pontas mostram as falas do mesmo jeito. */
+    static MensagemDoHistorico paraHistorico(Mensagem mensagem) {
         String identificacao = switch (mensagem.getRemetente()) {
             case CLIENTE -> mensagem.getAutor().getIdentificacao();
             case ATENDENTE -> ((Atendente) mensagem.getAutor()).getNome();
