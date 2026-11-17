@@ -353,7 +353,7 @@ async function transferir(conversa) {
     await postarTransferencia({ quemTransfereId, destinoId, motivo: texto });
     painelAberto = false;
     rascunho = { destinoId: "", motivo: "" };
-    avisar("sucesso", `Caso transferido para ${destino?.nome ?? "o colega"}. A conversa agora está com ele.`);
+    avisar("sucesso", `Caso transferido para ${destino?.nome ?? "outro atendente"}. A conversa agora está com essa pessoa.`);
   } catch (erro) {
     await tratarErroDaTransferencia(erro);
   } finally {
@@ -404,6 +404,23 @@ async function tratarErroDaTransferencia(erro) {
   avisar("erro", `Não foi possível transferir: ${erro.message} Tente de novo em instantes.`);
 }
 
+/** Duas setas em sentidos opostos, no mesmo traco dos outros icones do painel. */
+function iconeTransferir() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const atributos = {
+    class: "icone", viewBox: "0 0 24 24", width: "18", height: "18", fill: "none",
+    stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round",
+    "aria-hidden": "true",
+  };
+  for (const [nome, valor] of Object.entries(atributos)) svg.setAttribute(nome, valor);
+  for (const d of ["M16 3l4 4-4 4", "M20 7H4", "M8 21l-4-4 4-4", "M4 17h16"]) {
+    const caminho = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    caminho.setAttribute("d", d);
+    svg.append(caminho);
+  }
+  return svg;
+}
+
 function desenhar(conversa) {
   document.title = `Conversa com ${contato(conversa.contato)} | Tino`;
 
@@ -430,7 +447,7 @@ function desenhar(conversa) {
             "aria-controls": "transferencia",
             onclick: () => abrirPainel(conversa),
           },
-          el("span", { "aria-hidden": "true" }, "⇄"),
+          iconeTransferir(),
           "Transferir",
         )
       : null,
