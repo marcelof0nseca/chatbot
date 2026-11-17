@@ -1,7 +1,7 @@
 # Modelo de Dados — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**11 tabelas · 74 colunas** · DDL em [schema.sql](schema.sql), validado em H2 2.4
+**11 tabelas · 74 colunas no desenho**, das quais **7 tabelas e 42 colunas já existem no código**; o resto está marcado como *planejado* · DDL em [schema.sql](schema.sql), validado em H2 2.4
 
 ---
 
@@ -12,7 +12,7 @@
 | **Chave primária** | `BIGINT` de identidade em todas as tabelas | Acompanha o `Long id` do modelo de classes e mapeia direto em `@GeneratedValue`. Como o id aparece só no painel autenticado, a exposição de volume não é um risco aqui |
 | **Nomes** | `snake_case`, tabela no singular | Padrão que o PostgreSQL trata sem precisar de aspas |
 | **Carimbos de tempo** | `criado_em` e `atualizado_em` em toda tabela de entidade | Auditoria e diagnóstico. Tabelas de evento usam o nome do fato: `enviada_em`, `aberto_em`, `aceito_em` |
-| **Enums** | `VARCHAR` + `CHECK` | O banco recusa valor fora da lista, e o JPA mapeia direto com `@Enumerated(STRING)`. Guardar o número do enum quebraria se a ordem mudasse |
+| **Enums** | `VARCHAR` + `CHECK` | O banco recusa valor fora da lista, e o JPA mapeia direto com `@Enumerated(STRING)`. Guardar o número do enum quebraria se a ordem mudasse. No H2, o Hibernate cria essas colunas com o tipo `ENUM` nativo, que tem o mesmo efeito |
 | **Fuso** | Horários gravados como hora local de Recife (`America/Recife`), sem fuso na coluna | O servidor em nuvem roda em UTC; a aplicação fixa a zona no `Relogio` e no H2 (`TIME ZONE`), e o Hibernate grava sem converter pela JVM. As duas causas e as correções estão no `application.properties` |
 | **Exclusão** | Sem `DELETE` em `mensagem` | Histórico de atendimento não se reescreve. O expurgo da LGPD apaga a conversa inteira |
 
@@ -20,19 +20,19 @@
 
 ## 2. As tabelas e os épicos que as exigem
 
-| # | Tabela | Épico | O que sustenta |
-|---|---|---|---|
-| 1 | `cliente` | 1, 5 | Quem fala com o bot, e se é externo ou interno |
-| 2 | `consentimento` | 5 | Trilha de aceite e revogação do aviso de privacidade |
-| 3 | `atendente` | 4, 5 | Usuários do painel e seus perfis |
-| 4 | `artigo_conhecimento` | 2 | A base que o gestor edita sem desenvolvedor |
-| 5 | `artigo_variacao` | 2 | Outras formas de fazer a mesma pergunta |
-| 6 | `conversa` | 1, 3, 4 | Estado do diálogo e o contexto entre turnos |
-| 7 | `mensagem` | 1, 4 | O histórico que acompanha o escalonamento |
-| 8 | `ticket` | 4 | A fila de atendimento humano |
-| 9 | `horario_atendimento` | 3 | Expediente por dia da semana |
-| 10 | `feriado` | 3 | Calendário nacional importado + feriados da empresa |
-| 11 | `transferencia` | 4 | O caminho de um caso entre atendentes, sem voltar à fila |
+| # | Tabela | Épico | O que sustenta | No código |
+|---|---|---|---|---|
+| 1 | `cliente` | 1, 5 | Quem fala com o bot, e se é externo ou interno | sim |
+| 2 | `consentimento` | 5 | Trilha de aceite e revogação do aviso de privacidade | sim |
+| 3 | `atendente` | 4, 5 | Usuários do painel e seus perfis | sim |
+| 4 | `artigo_conhecimento` | 2 | A base que o gestor edita sem desenvolvedor | planejada |
+| 5 | `artigo_variacao` | 2 | Outras formas de fazer a mesma pergunta | planejada |
+| 6 | `conversa` | 1, 3, 4 | Estado do diálogo e o contexto entre turnos | sim |
+| 7 | `mensagem` | 1, 4 | O histórico que acompanha o escalonamento | sim |
+| 8 | `ticket` | 4 | A fila de atendimento humano | sim |
+| 9 | `horario_atendimento` | 3 | Expediente por dia da semana | planejada |
+| 10 | `feriado` | 3 | Calendário nacional importado + feriados da empresa | planejada |
+| 11 | `transferencia` | 4 | O caminho de um caso entre atendentes, sem voltar à fila | sim |
 
 ---
 
@@ -48,7 +48,7 @@
 | `email` | VARCHAR(160) | sim | | Opcional: quem chega pelo WhatsApp só informa o telefone |
 | `tipo` | VARCHAR(10) | não | | `EXTERNO` \| `INTERNO` |
 | `criado_em` | TIMESTAMP | não | | |
-| `atualizado_em` | TIMESTAMP | não | | |
+| `atualizado_em` | TIMESTAMP | não | | **Planejada** (auditoria de alterações) |
 
 O telefone é único porque é por ele que o webhook encontra o cliente a cada mensagem. O tipo decide se artigos internos podem ser respondidos.
 
@@ -71,13 +71,15 @@ Mapeada como tabela secundária de `cliente` (`@SecondaryTable`): o `Consentimen
 | `id` | BIGINT | não | PK | |
 | `nome` | VARCHAR(120) | não | | |
 | `email` | VARCHAR(160) | não | UK | Login do painel |
-| `senha_hash` | VARCHAR(100) | não | | Hash BCrypt. A senha em texto nunca é gravada |
+| `senha_hash` | VARCHAR(100) | não | | **Planejada** (login do painel). Hash BCrypt. A senha em texto nunca é gravada |
 | `perfil` | VARCHAR(10) | não | | `ATENDENTE` \| `GESTOR` |
 | `disponivel` | BOOLEAN | não | | Em serviço ou não; só quem está disponível assume ticket |
 | `criado_em` | TIMESTAMP | não | | |
-| `atualizado_em` | TIMESTAMP | não | | |
+| `atualizado_em` | TIMESTAMP | não | | **Planejada** (auditoria de alterações) |
 
-### 3.4 `artigo_conhecimento`
+### 3.4 `artigo_conhecimento` (planejada)
+
+As tabelas 3.4, 3.5, 3.9 e 3.10 são o desenho dos próximos épicos e ainda não existem no código. Hoje a base de conhecimento vive em memória, dentro do `Chatbot`.
 
 | Coluna | Tipo | Nulo | Chave | Regra |
 |---|---|---|---|---|
@@ -91,7 +93,7 @@ Mapeada como tabela secundária de `cliente` (`@SecondaryTable`): o `Consentimen
 | `atualizado_em` | TIMESTAMP | não | | Conteúdo velho é o que faz o bot errar — a coluna deixa isso visível |
 | `atualizado_por` | BIGINT | sim | FK → atendente | Quem fez a última edição |
 
-### 3.5 `artigo_variacao`
+### 3.5 `artigo_variacao` (planejada)
 
 | Coluna | Tipo | Nulo | Chave | Regra |
 |---|---|---|---|---|
@@ -107,14 +109,14 @@ Tabela separada porque é coleção 1:N. Guardar as variações numa string sepa
 |---|---|---|---|---|
 | `id` | BIGINT | não | PK | |
 | `cliente_id` | BIGINT | não | FK → cliente | |
-| `canal` | VARCHAR(20) | não | | `WHATSAPP` \| `WEB`. Já previsto para o núcleo não travar num canal só |
+| `canal` | VARCHAR(20) | não | | **Planejada** (outros canais além do WhatsApp). `WHATSAPP` \| `WEB`. Já previsto para o núcleo não travar num canal só |
 | `estado` | VARCHAR(30) | não | | `AGUARDANDO_CONSENTIMENTO` \| `COM_BOT` \| `AGUARDANDO_ATENDENTE` \| `COM_ATENDENTE` \| `ENCERRADA` |
-| `contexto` | VARCHAR(8000) | sim | | Documento JSON com o estado de trabalho do diálogo — **seção 4** |
+| `contexto` | VARCHAR(8000) | sim | | **Planejada** (contexto do diálogo, seção 4 do modelo de dados). Documento JSON com o estado de trabalho do diálogo — **seção 4** |
 | `tentativas_sem_sucesso` | SMALLINT | não | | Zera a cada acerto; ao chegar em 3 escalona |
 | `iniciada_em` | TIMESTAMP | não | | |
-| `ultima_atividade_em` | TIMESTAMP | não | | Base da expiração do contexto |
+| `ultima_atividade_em` | TIMESTAMP | não | | **Planejada** (expiração do contexto). Base da expiração do contexto |
 | `encerrada_em` | TIMESTAMP | sim | | |
-| `expurgo_previsto_para` | TIMESTAMP | sim | | Data de descarte pela política de retenção |
+| `expurgo_previsto_para` | TIMESTAMP | sim | | **Planejada** (retenção da LGPD). Data de descarte pela política de retenção |
 
 ### 3.7 `mensagem`
 
@@ -126,9 +128,9 @@ Tabela separada porque é coleção 1:N. Guardar as variações numa string sepa
 | `remetente_id` | BIGINT | sim | | Aponta para cliente ou atendente; nulo quando o autor é o bot |
 | `conteudo` | VARCHAR(4000) | não | | |
 | `data_hora` | TIMESTAMP | não | | |
-| `id_externo` | VARCHAR(80) | sim | UK | Id da mensagem no WhatsApp |
-| `artigo_id` | BIGINT | sim | FK → artigo_conhecimento | Qual artigo originou a resposta |
-| `confianca` | NUMERIC(4,3) | sim | | 0 a 1, só quando quem respondeu foi o bot |
+| `id_externo` | VARCHAR(80) | sim | UK | **Planejada** (integração com o WhatsApp). Id da mensagem no WhatsApp |
+| `artigo_id` | BIGINT | sim | FK → artigo_conhecimento | **Planejada** (base de conhecimento no banco). Qual artigo originou a resposta |
+| `confianca` | NUMERIC(4,3) | sim | | **Planejada** (base de conhecimento no banco). 0 a 1, só quando quem respondeu foi o bot |
 
 Três decisões aqui merecem explicação:
 
@@ -153,7 +155,7 @@ Três decisões aqui merecem explicação:
 
 Os três carimbos não são redundantes: são as duas métricas que o painel mostra, calculadas sem tabela extra.
 
-### 3.9 `horario_atendimento`
+### 3.9 `horario_atendimento` (planejada)
 
 | Coluna | Tipo | Nulo | Chave | Regra |
 |---|---|---|---|---|
@@ -163,7 +165,7 @@ Os três carimbos não são redundantes: são as duas métricas que o painel mos
 | `abre` | TIME | sim | | Obrigatório quando `atende` é verdadeiro |
 | `fecha` | TIME | sim | | `CHECK` garante `abre < fecha` |
 
-### 3.10 `feriado`
+### 3.10 `feriado` (planejada)
 
 | Coluna | Tipo | Nulo | Chave | Regra |
 |---|---|---|---|---|
@@ -271,7 +273,7 @@ O mesmo DDL roda nos dois. Três pontos onde a produção usa um tipo melhor:
 | `mensagem.conteudo`, `artigo.resposta` | `VARCHAR(4000)` | `TEXT` — sem limite fixo |
 | Busca na base | Comparação em Java | `pg_trgm` ou `tsvector` para busca textual |
 
-Em desenvolvimento o Hibernate gera essas tabelas a partir das entidades (`ddl-auto=update`). Em produção o `ddl-auto` passa a `validate` e este arquivo vira a primeira migração versionada do Flyway.
+Em desenvolvimento o Hibernate gera as 7 tabelas já implementadas a partir das entidades (`ddl-auto=update`). Em produção o `ddl-auto` passa a `validate` e este arquivo vira a primeira migração versionada do Flyway.
 
 ---
 
@@ -289,6 +291,17 @@ confianca = 1.5            → Check constraint violation: CK_MENSAGEM_CONFIANCA
 origem = destino           → Check constraint violation: CK_TRANSFERENCIA_DESTINO
 destino inexistente        → Referential integrity constraint violation: FK_TRANSFERENCIA_DESTINO
 ```
+
+### Conferência com o código (17/11/2026)
+
+O esquema documentado foi comparado com o banco que o Hibernate gera a partir das entidades: a aplicação subiu num banco descartável, este arquivo foi carregado em outro, e as duas listas de tabelas, colunas, tipos, tamanhos, nulidade e restrições foram comparadas.
+
+| Resultado | Detalhe |
+|---|---|
+| Tudo o que o código tem está documentado | 7 tabelas e 42 colunas, com tipo, tamanho e nulidade iguais |
+| O que o documento tem a mais está marcado como planejado | 4 tabelas (base de conhecimento, expediente e feriados) e 10 colunas |
+| Enums | No H2 o Hibernate usa o tipo `ENUM` nativo, em vez de `VARCHAR` + `CHECK`; o efeito é o mesmo |
+| Índices `ix_*` e `ck_transferencia_destino` | São para produção. Em desenvolvimento, a regra "origem diferente do destino" é garantida por `Ticket.transferirPara()` |
 
 O segundo teste é o mais relevante na prática: ele simula o reenvio do webhook pela Meta e confirma que a mensagem duplicada é recusada pelo banco, e não pela aplicação.
 
