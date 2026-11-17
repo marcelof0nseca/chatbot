@@ -12,8 +12,11 @@ Projeto acadêmico — Ciência da Computação, 3º período, Grupo 10.
 
 ## Como rodar
 
-Do zero ao sistema no ar, em dois terminais. Estes passos foram seguidos num
-clone novo, com o cache do Maven vazio, em 17/11/2026.
+Do zero ao sistema no ar. São **dois terminais abertos ao mesmo tempo**: um
+com o back-end, na pasta do projeto, e outro com o painel, na pasta `painel/`.
+Se o terminal do back-end for fechado, o painel passa a mostrar "Sem conexão com
+o servidor". Estes passos foram seguidos num clone novo, com o cache do Maven
+vazio, em 17/11/2026.
 
 ### 1. O que instalar
 
@@ -44,10 +47,16 @@ cd chatbot
 Está pronto quando aparecer `Started ChatbotApplication`. O back-end fica em
 `http://localhost:8080` e cria o banco na pasta `data/`, já com casos de exemplo.
 
+**Deixe este terminal aberto** enquanto usar o sistema: o painel depende dele.
+Para parar, aperte **Ctrl + C**. No Windows, o terminal pergunta "Deseja
+finalizar o arquivo em lotes (S/N)?": responda **S**.
+
 ### 4. Terminal 2: o painel
 
-Na pasta do projeto, entre em `painel/` e sirva os arquivos **na porta 5500**,
-a única que o CORS do back-end aceita:
+Abra **outro** terminal, sem fechar o primeiro. Na pasta do projeto, entre em
+`painel/` e sirva os arquivos **na porta 5500**, a única que o CORS do back-end
+aceita. Rodado na raiz do projeto, em vez de `painel/`, o endereço abaixo dá
+404:
 
 ```bash
 cd painel
@@ -95,7 +104,9 @@ começar do zero: pare o back-end com **Ctrl + C** e apague a pasta `data/`.
 |---|---|
 | `java` não é reconhecido, ou erro sobre `JAVA_HOME` | Instale o JDK 17 ou superior, ou ponha a pasta `bin` dele no `PATH`. Confira com `java -version` |
 | `Port 8080 was already in use` | Outro programa, ou outro back-end, está na porta. Feche-o e rode de novo |
-| O painel diz **Sem conexão com o servidor** | O back-end não está no ar, ou ainda está subindo. Espere o `Started ChatbotApplication` e clique em **Tentar de novo** |
+| O painel diz **Sem conexão com o servidor** | O back-end não está no ar, ou ainda está subindo. Confira se o terminal 1 continua aberto, espere o `Started ChatbotApplication` e clique em **Tentar de novo** |
+| `http://localhost:5500/index.html` dá **404** | O servidor do painel foi aberto na raiz do projeto. Pare-o, entre em `painel/` (`cd painel`) e rode de novo |
+| Ao apertar Ctrl + C, o Windows pergunta "Deseja finalizar o arquivo em lotes (S/N)?" | Responda **S**: é o Windows confirmando que pode parar o back-end |
 | O painel abre, mas a fila não carrega, e o console do navegador (F12) fala em CORS | O painel não está na porta 5500 |
 | No Windows, `python` abre a Microsoft Store | O Python não está instalado: use `jwebserver -p 5500` ou instale o Python |
 | O visual não mudou depois de atualizar o projeto | Recarregue sem cache: **Ctrl + Shift + R** |
