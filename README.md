@@ -96,15 +96,6 @@ Sem o simulador, dá para começar pelos casos de exemplo: o `••• 6650` j�
 com o Bruno, transferido pela Ana, e os casos em **Aguardando** podem ser
 assumidos.
 
-Enquanto o botão **Transferir** não chega à Tela 7, o passo 5 pode ser feito
-pelo PowerShell, com o back-end no ar. Troque o `1` do endereço pelo número do
-caso, que aparece no endereço da conversa (`conversa.html?ticket=1`):
-
-```powershell
-$corpo = '{"quemTransfereId":1001,"destinoId":1002,"motivo":"Avaria na entrega"}'
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/fila/1/transferir -ContentType "application/json" -Body $corpo
-```
-
 ### Voltar ao estado inicial
 
 A cada início, o back-end devolve os casos de exemplo ao estado original, mas o
