@@ -102,7 +102,7 @@ abaixo do limite de confiança, nenhum caminho do código devolve conteúdo da b
 |---|---|
 | [docs/ambientes.md](docs/ambientes.md) | Ambientes de desenvolvimento e deploy |
 | [docs/modelo-de-classes.md](docs/modelo-de-classes.md) | Modelo de entidades em POO, com diagrama de classes |
-| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Dicionário de dados das 11 tabelas e como o contexto da conversa é salvo |
+| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Dicionário de dados das 11 tabelas (7 já no código, 4 planejadas) e como o contexto da conversa é salvo |
 | [docs/schema.sql](docs/schema.sql) | DDL executável, validado em H2 |
 | [docs/transferencia.md](docs/transferencia.md) | Transferência de caso: critérios de aceite, regras adotadas e contrato da API |
 | [docs/Wireframe-Tino-Grupo10.pdf](docs/Wireframe-Tino-Grupo10.pdf) | Wireframe v1, baixa fidelidade, das 9 telas |

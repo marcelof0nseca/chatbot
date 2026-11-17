@@ -12,12 +12,12 @@
 | `Pessoa` | abstrata | Base de Cliente e Atendente: identidade, nome, data de cadastro |
 | `Cliente` | entidade | Quem fala com o Tino pelo WhatsApp. Guarda telefone, tipo e consentimento |
 | `Atendente` | entidade | Quem assume os casos escalonados. Tem perfil e disponibilidade |
-| `Chatbot` | entidade | O Tino. Busca na base e decide entre responder e escalonar |
+| `Chatbot` | classe de domínio | O Tino. Busca na base e decide entre responder e escalonar. Ainda não é gravado no banco: a base vive em memória |
 | `Conversa` | entidade (agregado) | Dona das mensagens e da máquina de estados |
 | `Mensagem` | entidade imutável | Uma fala dentro de uma conversa |
 | `Ticket` | entidade | O atendimento humano aberto no escalonamento |
 | `Transferencia` | entidade imutável | Registro de um caso que mudou de mãos: origem, destino, quem decidiu, motivo e quando |
-| `ArtigoConhecimento` | entidade | Item da base: pergunta, variações, resposta |
+| `ArtigoConhecimento` | classe de domínio | Item da base: pergunta, variações, resposta. A tabela está desenhada no modelo de dados, mas ainda não existe |
 | `Consentimento` | objeto de valor | Aceite do aviso de privacidade, com data e versão (LGPD) |
 | `RespostaCandidata` | objeto de valor | Artigo encontrado + nota de confiança |
 | `Relogio` | utilitário do domínio | Fonte única de "agora", no fuso de Recife. As entidades leem a hora daqui; nos testes, um relógio fixo deixa os carimbos de tempo previsíveis |
@@ -61,6 +61,7 @@ classDiagram
         -PerfilAtendente perfil
         -boolean disponivel
         +entrarEmServico()
+        +sairDeServico()
         +estaDisponivel() boolean
         +podeGerenciarBaseDeConhecimento() boolean
     }
@@ -84,6 +85,7 @@ classDiagram
         +escalonar(MotivoEscalonamento) Ticket
         +encerrar()
         +resolvidaPeloBot() boolean
+        +botPodeResponder() boolean
     }
 
     class Mensagem {
@@ -103,6 +105,7 @@ classDiagram
         +resolver()
         +cancelar()
         +tempoDeEspera() Duration
+        +tempoDeAtendimento() Duration
     }
 
     class Transferencia {
@@ -153,6 +156,12 @@ classDiagram
 ```
 
 ---
+
+### O que vai para o banco
+
+Das 19 classes, 7 são gravadas no banco: `Cliente`, `Atendente`, `Conversa`, `Mensagem`, `Ticket` e `Transferencia` (`@Entity`) e `Consentimento` (`@Embeddable`, na tabela `consentimento`). `Pessoa` é `@MappedSuperclass`: os campos dela vão para as tabelas de cliente e atendente. `Chatbot`, `ArtigoConhecimento` e `RespostaCandidata` vivem em memória.
+
+Conferido contra o código em 17/11/2026: todo atributo e método do diagrama existe na classe correspondente.
 
 ## 3. Relacionamentos e cardinalidade
 
