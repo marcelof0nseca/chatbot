@@ -8,6 +8,9 @@ import com.wxn.chatbot.dominio.StatusTicket;
  * O contato vem sempre mascarado: o telefone completo existe no dominio, mas
  * nao atravessa a fronteira da API. E minimizacao de dado pessoal na tela mais
  * exposta do painel.
+ *
+ * atendenteId acompanha o nome para o painel separar os casos de quem esta
+ * usando a tela ("meus casos"), sem depender de comparar nomes.
  */
 public record ItemDaFila(
         Long ticketId,
@@ -16,5 +19,6 @@ public record ItemDaFila(
         long esperaEmSegundos,
         StatusTicket status,
         String ultimaMensagem,
-        String atendente) {
+        String atendente,
+        Long atendenteId) {
 }

@@ -28,6 +28,9 @@ servidor, defina `window.TINO_API` antes dos scripts.
   fila de novo e diz quem assumiu, em vez de falhar em silêncio.
 - **Falha numa atualização:** os casos que já estavam na tela continuam visíveis,
   com um aviso.
+- **Meus casos:** os casos em atendimento com quem está em "Atendendo como"
+  aparecem primeiro. É assim que quem recebe uma transferência encontra o
+  caso. Trocar o atendente no seletor reorganiza a fila na hora.
 - A fila se atualiza sozinha a cada 20 segundos.
 
 ## Decisões

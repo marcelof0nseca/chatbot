@@ -158,7 +158,8 @@ public class FilaDeConversasService {
                 ticket.tempoDeEspera().toSeconds(),
                 ticket.getStatus(),
                 ultimaFalaDoCliente(conversa),
-                ticket.getAtendente().map(Atendente::getNome).orElse(null));
+                ticket.getAtendente().map(Atendente::getNome).orElse(null),
+                ticket.getAtendente().map(Atendente::getId).orElse(null));
     }
 
     /** O que o cliente disse por ultimo e o que diz ao atendente do que se trata. */

@@ -1,5 +1,8 @@
 // Tela 6: fila de atendimento. Consome GET /api/fila, GET /api/fila/resumo
 // e POST /api/fila/{ticketId}/assumir.
+//
+// Os casos de quem esta usando o painel ("Atendendo como") aparecem primeiro,
+// em "Meus casos": e assim que quem recebe uma transferencia encontra o caso.
 
 import { api, el, motivo, contato, partesDaEspera, esperaEmTexto, montarSeletorDeAtendente } from "./api.js";
 
@@ -24,6 +27,8 @@ const horaDeRecife = new Intl.DateTimeFormat("pt-BR", {
 
 let atendenteEscolhido = () => null;
 let temDadosNaTela = false;
+/** A ultima fila recebida: trocar o atendente redesenha sem ir ao servidor. */
+let ultimaFila = null;
 let assumindo = false;
 
 function avisar(tipo, ...conteudo) {
@@ -81,13 +86,15 @@ function iniciais(nome) {
   return (primeira + ultima).toUpperCase();
 }
 
-function caso(item) {
+function caso(item, meu = false) {
   const aguardando = item.status === "ABERTO";
   const { numero, unidade } = partesDaEspera(item.esperaEmSegundos);
   const longa = aguardando && item.esperaEmSegundos >= ESPERA_LONGA;
   const linkConversa = `conversa.html?ticket=${encodeURIComponent(item.ticketId)}`;
 
-  const acao = aguardando
+  const acao = meu
+    ? [el("a", { class: "botao", href: linkConversa }, "Abrir conversa")]
+    : aguardando
     ? [
         el("a", { class: "acao-texto", href: linkConversa }, "Ver conversa"),
         el(
@@ -112,7 +119,7 @@ function caso(item) {
 
   return el(
     "li",
-    { class: aguardando ? "caso" : "caso atendendo" },
+    { class: meu ? "caso meu" : aguardando ? "caso" : "caso atendendo" },
     el(
       "div",
       { class: longa ? "espera longa" : "espera", title: longa ? "Esperando há mais de 30 minutos" : null },
@@ -138,16 +145,32 @@ function caso(item) {
   );
 }
 
-function grupo(titulo, itens) {
+function titulo(texto, quantidade) {
+  return el("h2", { class: "grupo" }, texto, el("span", { class: "grupo-contagem" }, String(quantidade)));
+}
+
+function grupo(texto, itens, meus = false) {
+  return [titulo(texto, itens.length), el("ol", { class: meus ? "casos meus" : "casos" }, ...itens.map((i) => caso(i, meus)))];
+}
+
+/** "Meus casos": vazio tambem aparece, para dizer o que fazer. */
+function grupoDosMeus(meus) {
+  if (meus.length) return grupo("Meus casos", meus, true);
   return [
-    el("h2", { class: "grupo" }, titulo, el("span", { class: "grupo-contagem" }, String(itens.length))),
-    el("ol", { class: "casos" }, ...itens.map(caso)),
+    titulo("Meus casos", 0),
+    el("p", { class: "grupo-vazio" }, "Nenhum caso com você agora. Assuma um caso da fila abaixo."),
   ];
 }
 
 function desenharFila(fila) {
+  ultimaFila = fila;
+  const eu = atendenteEscolhido();
+  const ehMeu = (item) => eu != null && item.atendenteId != null && String(item.atendenteId) === String(eu);
+
   const aguardando = fila.filter((item) => item.status === "ABERTO");
   const emAtendimento = fila.filter((item) => item.status === "EM_ATENDIMENTO");
+  const meus = emAtendimento.filter(ehMeu);
+  const deOutros = emAtendimento.filter((item) => !ehMeu(item));
 
   if (fila.length === 0) {
     $fila.replaceChildren(
@@ -161,13 +184,18 @@ function desenharFila(fila) {
     return;
   }
 
-  const partes = aguardando.length
-    ? grupo("Aguardando", aguardando)
-    : [
-        el("h2", { class: "grupo" }, "Aguardando", el("span", { class: "grupo-contagem" }, "0")),
-        el("p", { class: "grupo-vazio" }, "Ninguém aguardando agora. Os casos abaixo já estão com alguém."),
-      ];
-  if (emAtendimento.length) partes.push(...grupo("Em atendimento", emAtendimento));
+  const partes = eu != null ? grupoDosMeus(meus) : [];
+  partes.push(
+    ...(aguardando.length
+      ? grupo("Aguardando", aguardando)
+      : [
+          titulo("Aguardando", 0),
+          el("p", { class: "grupo-vazio" }, "Ninguém aguardando agora. Os casos abaixo já estão com alguém."),
+        ]),
+  );
+  if (deOutros.length) {
+    partes.push(...grupo(eu != null ? "Com outros atendentes" : "Em atendimento", deOutros));
+  }
   $fila.replaceChildren(...partes);
 }
 
@@ -260,8 +288,15 @@ async function explicarFalhaAoAssumir(item, erro) {
 // ---------- inicio ----------
 
 $atualizar.addEventListener("click", carregar);
-montarSeletorDeAtendente($atendente).then((escolhido) => (atendenteEscolhido = escolhido));
-carregar();
+// A fila so e desenhada depois de saber quem esta usando o painel, para
+// "Meus casos" nao piscar vazio na primeira carga.
+montarSeletorDeAtendente($atendente).then((escolhido) => {
+  atendenteEscolhido = escolhido;
+  carregar();
+});
+$atendente.addEventListener("change", () => {
+  if (ultimaFila) desenharFila(ultimaFila);
+});
 
 setInterval(() => {
   if (!assumindo && !document.hidden) carregar();

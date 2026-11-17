@@ -71,6 +71,7 @@ class FilaPersistenciaTest {
         fila.subList(0, 3).forEach(item -> assertEquals(StatusTicket.ABERTO, item.status()));
         assertEquals(StatusTicket.EM_ATENDIMENTO, fila.get(3).status());
         assertEquals("Bruno Dias", fila.get(3).atendente());
+        assertEquals(1001L, fila.get(3).atendenteId());
     }
 
     @Test
