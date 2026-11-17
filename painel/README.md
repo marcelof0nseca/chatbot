@@ -13,7 +13,8 @@ que o atendente da WXN usa para ver a fila e as conversas encaminhadas pelo Tino
 1. Suba o back-end na raiz do projeto: `.\mvnw.cmd spring-boot:run`, que abre em `http://localhost:8080`.
 2. Sirva esta pasta **na porta 5500**, a única origem que o CORS do back-end aceita:
    - no VS Code, com a extensão Live Server: abra `painel/index.html` e clique em **Go Live**;
-   - ou no terminal, dentro de `painel/`: `python -m http.server 5500`.
+   - ou no terminal, dentro de `painel/`: `python -m http.server 5500`;
+   - ou, sem Python, com o JDK 18 ou superior: `jwebserver -p 5500`.
 3. Abra `http://localhost:5500/index.html` (ou `/painel/index.html`, se o Live Server servir a raiz do projeto).
 
 Para usar outra porta, acrescente a origem em `app.cors.allowed-origins`, no

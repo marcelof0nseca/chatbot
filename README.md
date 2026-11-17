@@ -12,19 +12,102 @@ Projeto acadêmico — Ciência da Computação, 3º período, Grupo 10.
 
 ## Como rodar
 
-Requisito único: **JDK 17 ou superior**. O Maven vem junto, pelo wrapper.
+Do zero ao sistema no ar, em dois terminais. Estes passos foram seguidos num
+clone novo, com o cache do Maven vazio, em 17/11/2026.
+
+### 1. O que instalar
+
+| Programa | Para quê | Para conferir |
+|---|---|---|
+| **JDK 17 ou superior** | O back-end. O Maven vem junto, pelo wrapper | `java -version` |
+| **Git** | Baixar o projeto | `git --version` |
+| **Um servidor de arquivos**, qualquer um destes: Python 3, o `jwebserver` (vem no JDK 18 ou superior) ou a extensão Live Server do VS Code | O painel | `python --version` ou `jwebserver --version` |
+
+A primeira execução precisa de internet: o wrapper baixa o Maven e as
+dependências, o que leva cerca de 2 minutos. Das próximas vezes, sobe em
+segundos.
+
+### 2. Baixar o projeto
 
 ```bash
 git clone https://github.com/marcelof0nseca/chatbot.git
 cd chatbot
 ```
 
+### 3. Terminal 1: o back-end
+
 ```bash
 .\mvnw.cmd spring-boot:run      # Windows
 ./mvnw spring-boot:run          # Linux e macOS
 ```
 
-A aplicação sobe em `http://localhost:8080`.
+Está pronto quando aparecer `Started ChatbotApplication`. O back-end fica em
+`http://localhost:8080` e cria o banco na pasta `data/`, já com casos de exemplo.
+
+### 4. Terminal 2: o painel
+
+Na pasta do projeto, entre em `painel/` e sirva os arquivos **na porta 5500**,
+a única que o CORS do back-end aceita:
+
+```bash
+cd painel
+python -m http.server 5500      # com Python (no Windows também funciona: py -m http.server 5500)
+jwebserver -p 5500              # sem Python, com JDK 18 ou superior
+```
+
+Pelo VS Code, abra `painel/index.html` e clique em **Go Live**: o Live Server
+usa a porta 5500.
+
+Abra **http://localhost:5500/index.html** no navegador.
+
+### 5. As duas histórias, numa sessão
+
+Com os casos de exemplo:
+
+1. Em **Atendendo como**, escolha **Bruno Dias**. Em **Meus casos** aparece o
+   caso `••• 6650`, que a Ana já transferiu para ele.
+2. **A fila e o assumir (primeira história).** Em **Aguardando**, clique em
+   **Assumir** no caso do topo, `••• 4821`. Ele passa para **Meus casos**.
+   **Abrir conversa** mostra o histórico desde a primeira mensagem, com a
+   marcação de onde o Tino passou o caso para atendimento humano.
+3. **A transferência (segunda história).** Nessa conversa, transfira o caso para
+   a Ana, com o motivo.
+4. Volte à fila e escolha **Ana Lima** em **Atendendo como**. O caso aparece em
+   **Meus casos** dela e, ao abrir a conversa, o histórico está inteiro.
+
+Enquanto o botão **Transferir** não chega à Tela 7, o passo 3 pode ser feito
+pelo PowerShell, com o back-end no ar:
+
+```powershell
+$corpo = '{"quemTransfereId":1001,"destinoId":1002,"motivo":"Cliente quer negociar desconto"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/fila/1001/transferir -ContentType "application/json" -Body $corpo
+```
+
+### Voltar ao estado inicial
+
+A cada início, o back-end devolve os casos de exemplo ao estado original, mas o
+que foi criado durante o uso, como as transferências, continua gravado. Para
+começar do zero: pare o back-end com **Ctrl + C** e apague a pasta `data/`.
+
+### Se algo der errado
+
+| O que aparece | O que fazer |
+|---|---|
+| `java` não é reconhecido, ou erro sobre `JAVA_HOME` | Instale o JDK 17 ou superior, ou ponha a pasta `bin` dele no `PATH`. Confira com `java -version` |
+| `Port 8080 was already in use` | Outro programa, ou outro back-end, está na porta. Feche-o e rode de novo |
+| O painel diz **Sem conexão com o servidor** | O back-end não está no ar, ou ainda está subindo. Espere o `Started ChatbotApplication` e clique em **Tentar de novo** |
+| O painel abre, mas a fila não carrega, e o console do navegador (F12) fala em CORS | O painel não está na porta 5500 |
+| No Windows, `python` abre a Microsoft Store | O Python não está instalado: use `jwebserver -p 5500` ou instale o Python |
+| O visual não mudou depois de atualizar o projeto | Recarregue sem cache: **Ctrl + Shift + R** |
+
+### Testes
+
+```bash
+.\mvnw.cmd test      # Windows
+./mvnw test          # Linux e macOS
+```
+
+### API
 
 | Endereço | O que é |
 |---|---|
@@ -37,24 +120,7 @@ A aplicação sobe em `http://localhost:8080`.
 | `GET /api/atendentes` | A equipe que pode assumir casos, em ordem alfabética |
 | `/h2-console` | Console do banco. JDBC URL `jdbc:h2:file:./data/chatbotdb`, usuário `sa`, senha vazia |
 
-Para rodar os testes:
-
-```bash
-.\mvnw.cmd test
-```
-
-### Painel de atendimento
-
-O painel web fica em [painel/](painel/), um projeto separado servido na porta
-5500, a origem que o CORS do back-end aceita. Com o back-end no ar, dentro de
-`painel/`:
-
-```bash
-python -m http.server 5500
-```
-
-e abra `http://localhost:5500/index.html`. Pelo VS Code, o Live Server faz o
-mesmo. Detalhes em [painel/README.md](painel/README.md).
+Detalhes do painel em [painel/README.md](painel/README.md).
 
 ---
 
