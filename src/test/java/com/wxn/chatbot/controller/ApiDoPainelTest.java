@@ -168,13 +168,14 @@ class ApiDoPainelTest {
     void transferirComSucesso() throws Exception {
         given(fila.transferir(1004L, 1002L, 1001L, "Assunto do financeiro")).willReturn(new ItemDaFila(
                 1004L, "*********6650", "ASSUNTO_NAO_SUPORTADO", 180, StatusTicket.EM_ATENDIMENTO,
-                "preciso da segunda via do boleto", "Bruno Dias"));
+                "preciso da segunda via do boleto", "Bruno Dias", 1001L));
 
         transferir(PEDIDO)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ticketId").value(1004))
                 .andExpect(jsonPath("$.status").value("EM_ATENDIMENTO"))
-                .andExpect(jsonPath("$.atendente").value("Bruno Dias"));
+                .andExpect(jsonPath("$.atendente").value("Bruno Dias"))
+                .andExpect(jsonPath("$.atendenteId").value(1001));
     }
 
     @Test

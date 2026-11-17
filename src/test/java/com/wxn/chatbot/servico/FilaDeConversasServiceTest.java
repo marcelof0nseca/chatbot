@@ -121,6 +121,7 @@ class FilaDeConversasServiceTest {
         escalonar(1L, "5581999990001", "cobrança duplicada", MotivoEscalonamento.BAIXA_CONFIANCA);
 
         assertNull(servico.listarFila().get(0).atendente());
+        assertNull(servico.listarFila().get(0).atendenteId());
     }
 
     @Test
@@ -133,6 +134,7 @@ class FilaDeConversasServiceTest {
 
         assertEquals(StatusTicket.EM_ATENDIMENTO, item.status());
         assertEquals("Bruno Dias", item.atendente());
+        assertEquals(bruno.getId(), item.atendenteId());
         assertEquals(EstadoConversa.COM_ATENDENTE, conversa.getEstado());
     }
 
@@ -219,6 +221,7 @@ class FilaDeConversasServiceTest {
 
         assertEquals(StatusTicket.EM_ATENDIMENTO, item.status());
         assertEquals("Carla Melo", item.atendente());
+        assertEquals(carla.getId(), item.atendenteId());
         assertEquals(EstadoConversa.COM_ATENDENTE, conversa.getEstado());
 
         List<Transferencia> caminho = repositorio.listarTransferencias(1L);
