@@ -8,12 +8,14 @@
 --
 -- Compativel com H2 2.x (desenvolvimento) e PostgreSQL 16+ (producao).
 --
--- O QUE JA EXISTE NO CODIGO (conferido em 17/11/2026 contra o banco que o
+-- O QUE JA EXISTE NO CODIGO (conferido em 27/11/2026 contra o banco que o
 -- Hibernate gera a partir das entidades, com ddl-auto=update):
 --   * 7 tabelas: cliente, consentimento, atendente, conversa, mensagem,
---     ticket e transferencia, com 42 colunas. Nome, tipo, tamanho e
+--     ticket e transferencia, com 44 colunas. Nome, tipo, tamanho e
 --     nulidade de cada uma batem com este arquivo.
---   * O que esta marcado PLANEJADA (4 tabelas e 10 colunas) e o desenho
+--   * conversa.contexto (o estado do fluxo guiado) e conversa.assunto (o
+--     resumo do fluxo) entraram com o atendimento guiado.
+--   * O que esta marcado PLANEJADA (4 tabelas e 9 colunas) e o desenho
 --     para os proximos epicos: ainda nao existe no codigo.
 --   * Enums: no H2, o Hibernate cria a coluna com o tipo ENUM nativo, que
 --     recusa valor fora da lista como o CHECK deste arquivo.
@@ -113,7 +115,8 @@ CREATE TABLE conversa (
     cliente_id              BIGINT        NOT NULL,
     canal                   VARCHAR(20)   NOT NULL DEFAULT 'WHATSAPP',  -- PLANEJADA: outros canais alem do WhatsApp
     estado                  VARCHAR(30)   NOT NULL,
-    contexto                VARCHAR(8000),  -- PLANEJADA: contexto do dialogo, secao 4 do modelo de dados
+    contexto                VARCHAR(8000),  -- estado do fluxo guiado em JSON, secao 4 do modelo de dados
+    assunto                 VARCHAR(300),   -- resumo do fluxo ao passar o caso: a previa da fila
     tentativas_sem_sucesso  SMALLINT      NOT NULL DEFAULT 0,
     iniciada_em             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ultima_atividade_em     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- PLANEJADA: expiracao do contexto

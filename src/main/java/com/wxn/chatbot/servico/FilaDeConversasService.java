@@ -157,12 +157,16 @@ public class FilaDeConversasService {
                 ticket.getMotivo().name(),
                 ticket.tempoDeEspera().toSeconds(),
                 ticket.getStatus(),
-                ultimaFalaDoCliente(conversa),
+                conversa.getAssunto().map(FilaDeConversasService::resumir)
+                        .orElseGet(() -> ultimaFalaDoCliente(conversa)),
                 ticket.getAtendente().map(Atendente::getNome).orElse(null),
                 ticket.getAtendente().map(Atendente::getId).orElse(null));
     }
 
-    /** O que o cliente disse por ultimo e o que diz ao atendente do que se trata. */
+    /**
+     * Sem o resumo de um fluxo guiado, o que o cliente disse por ultimo e o que
+     * diz ao atendente do que se trata.
+     */
     private String ultimaFalaDoCliente(Conversa conversa) {
         List<Mensagem> mensagens = conversa.getMensagens();
         for (int i = mensagens.size() - 1; i >= 0; i--) {

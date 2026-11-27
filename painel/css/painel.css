@@ -507,6 +507,8 @@ h1 {
   border-radius: var(--raio);
   background: var(--fundo);
   overflow-wrap: anywhere;
+  /* As perguntas do Tino trazem as opcoes e o resumo em linhas separadas. */
+  white-space: pre-line;
 }
 
 /* O canto mais reto aponta para quem falou: cliente a esquerda, empresa a direita. */

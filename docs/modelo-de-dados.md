@@ -1,7 +1,7 @@
 # Modelo de Dados — Tino
 
 **Projeto:** Tino — assistente de atendimento · **Cliente:** WXN · **Grupo:** 10
-**11 tabelas · 74 colunas no desenho**, das quais **7 tabelas e 42 colunas já existem no código**; o resto está marcado como *planejado* · DDL em [schema.sql](schema.sql), validado em H2 2.4
+**11 tabelas · 75 colunas no desenho**, das quais **7 tabelas e 44 colunas já existem no código**; o resto está marcado como *planejado* · DDL em [schema.sql](schema.sql), validado em H2 2.4
 
 ---
 
@@ -111,7 +111,8 @@ Tabela separada porque é coleção 1:N. Guardar as variações numa string sepa
 | `cliente_id` | BIGINT | não | FK → cliente | |
 | `canal` | VARCHAR(20) | não | | **Planejada** (outros canais além do WhatsApp). `WHATSAPP` \| `WEB`. Já previsto para o núcleo não travar num canal só |
 | `estado` | VARCHAR(30) | não | | `AGUARDANDO_CONSENTIMENTO` \| `COM_BOT` \| `AGUARDANDO_ATENDENTE` \| `COM_ATENDENTE` \| `ENCERRADA` |
-| `contexto` | VARCHAR(8000) | sim | | **Planejada** (contexto do diálogo, seção 4 do modelo de dados). Documento JSON com o estado de trabalho do diálogo — **seção 4** |
+| `contexto` | VARCHAR(8000) | sim | | Documento JSON com o estado de trabalho do fluxo guiado — **seção 4**. Nulo fora de um fluxo; limpo quando o caso vai para um atendente ou a conversa termina |
+| `assunto` | VARCHAR(300) | sim | | Resumo em uma linha do que o Tino coletou num fluxo guiado, gravado ao passar o caso. É a prévia da fila. Detalhes em [fluxos-guiados.md](fluxos-guiados.md) |
 | `tentativas_sem_sucesso` | SMALLINT | não | | Zera a cada acerto; ao chegar em 3 escalona |
 | `iniciada_em` | TIMESTAMP | não | | |
 | `ultima_atividade_em` | TIMESTAMP | não | | **Planejada** (expiração do contexto). Base da expiração do contexto |
@@ -282,7 +283,7 @@ Em desenvolvimento o Hibernate gera as 7 tabelas já implementadas a partir das 
 O DDL foi executado contra o H2 2.4.240 e as restrições foram testadas:
 
 ```
-11 tabelas criadas, 74 colunas
+11 tabelas criadas, 75 colunas
 INSERT do fluxo completo (cliente → consentimento → conversa → mensagem → ticket → transferencia): OK
 
 estado 'PENSANDO'          → Check constraint violation: CK_CONVERSA_ESTADO
@@ -292,14 +293,14 @@ origem = destino           → Check constraint violation: CK_TRANSFERENCIA_DEST
 destino inexistente        → Referential integrity constraint violation: FK_TRANSFERENCIA_DESTINO
 ```
 
-### Conferência com o código (17/11/2026)
+### Conferência com o código (17/11/2026, refeita em 27/11/2026)
 
-O esquema documentado foi comparado com o banco que o Hibernate gera a partir das entidades: a aplicação subiu num banco descartável, este arquivo foi carregado em outro, e as duas listas de tabelas, colunas, tipos, tamanhos, nulidade e restrições foram comparadas.
+O esquema documentado foi comparado com o banco que o Hibernate gera a partir das entidades: a aplicação subiu num banco descartável, este arquivo foi carregado em outro, e as duas listas de tabelas, colunas, tipos, tamanhos, nulidade e restrições foram comparadas. A conferência foi refeita depois do atendimento guiado, que implementou `conversa.contexto` (antes planejada) e criou `conversa.assunto`.
 
 | Resultado | Detalhe |
 |---|---|
-| Tudo o que o código tem está documentado | 7 tabelas e 42 colunas, com tipo, tamanho e nulidade iguais |
-| O que o documento tem a mais está marcado como planejado | 4 tabelas (base de conhecimento, expediente e feriados) e 10 colunas |
+| Tudo o que o código tem está documentado | 7 tabelas e 44 colunas, com tipo, tamanho e nulidade iguais |
+| O que o documento tem a mais está marcado como planejado | 4 tabelas (base de conhecimento, expediente e feriados) e 9 colunas |
 | Enums | No H2 o Hibernate usa o tipo `ENUM` nativo, em vez de `VARCHAR` + `CHECK`; o efeito é o mesmo |
 | Índices `ix_*` e `ck_transferencia_destino` | São para produção. Em desenvolvimento, a regra "origem diferente do destino" é garantida por `Ticket.transferirPara()` |
 

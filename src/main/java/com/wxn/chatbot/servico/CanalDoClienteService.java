@@ -17,7 +17,9 @@ import com.wxn.chatbot.dto.ConversaDoCliente;
  * Quem chama nao importa: hoje e o simulador do painel; com a integracao do
  * WhatsApp, o webhook da Meta chama o mesmo receberMensagem(). O servico acha
  * o cliente pelo telefone, retoma a conversa em andamento e deixa o Tino
- * decidir: pedir o aceite da LGPD, responder pela base ou escalar. Quando a
+ * decidir: pedir o aceite da LGPD, responder pela base, conduzir um fluxo
+ * guiado ou escalar. Uma conversa que o Tino encerrou fica para tras: a
+ * proxima mensagem abre uma conversa nova. Quando a
  * conversa ja esta com um humano, o bot fica quieto e a fala so e registrada,
  * para o atendente ver na Tela 7.
  */
@@ -98,12 +100,13 @@ public class CanalDoClienteService {
         return telefone.replaceAll("\\D", "");
     }
 
-    private static ConversaDoCliente paraCliente(Conversa conversa) {
+    private ConversaDoCliente paraCliente(Conversa conversa) {
         return new ConversaDoCliente(
                 conversa.getId(),
                 conversa.getEstado().name(),
                 conversa.getTicket().map(Ticket::getId).orElse(null),
                 conversa.getTicket().flatMap(Ticket::getAtendente).map(Atendente::getNome).orElse(null),
-                conversa.getMensagens().stream().map(AtendimentoService::paraHistorico).toList());
+                conversa.getMensagens().stream().map(AtendimentoService::paraHistorico).toList(),
+                tino.opcoesAtuais(conversa));
     }
 }

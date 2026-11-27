@@ -74,17 +74,56 @@ class CanalDoClienteServiceTest {
     }
 
     @Test
-    @DisplayName("O que a base não cobre vira um caso para atendimento humano")
-    void escala() {
+    @DisplayName("Depois do aceite, o cliente vê os assuntos do menu como botões")
+    void menuDepoisDoAceite() {
+        ConversaDoCliente aviso = escrever("oi");
+        assertEquals(List.of("Sim", "Não"), aviso.opcoes());
+
+        ConversaDoCliente conversa = escrever("sim");
+
+        assertEquals("COM_BOT", conversa.situacao());
+        assertEquals(List.of("Acompanhar um pedido", "Produto com defeito", "Trocar um produto",
+                "Cancelar uma compra", "Pagamento", "Falar com um atendente"), conversa.opcoes());
+    }
+
+    @Test
+    @DisplayName("Produto com defeito: o Tino conduz o cliente e passa o caso com um resumo pronto")
+    void fluxoDoDefeito() {
         escrever("oi");
         escrever("sim");
 
-        ConversaDoCliente conversa = escrever("Meu pedido chegou quebrado");
+        assertEquals("COM_BOT", escrever("Meu pedido chegou quebrado").situacao());
+        assertEquals(3, escrever("é o pedido 123456").opcoes().size());
+        assertEquals(List.of("Enviar foto", "Não consigo enviar agora"), escrever("1").opcoes());
+        escrever("[Foto] produto.jpg");
+        escrever("Trocar por um novo");
+        ConversaDoCliente conversa = escrever("Sim, pode abrir");
 
         assertEquals("AGUARDANDO_ATENDENTE", conversa.situacao());
-        List<String> falas = falas(conversa);
-        assertEquals(Chatbot.TEXTO_FALLBACK, falas.get(falas.size() - 1));
-        assertEquals(true, repositorio.conversas().get(0).getTicket().isPresent());
+        assertEquals(List.of(), conversa.opcoes());
+        String ultima = falas(conversa).get(falas(conversa).size() - 1);
+        assertEquals(true, ultima.contains("• Pedido: 123456"), ultima);
+        assertEquals(true, ultima.contains("• Foto: enviada"), ultima);
+        Conversa gravada = repositorio.conversas().get(0);
+        assertEquals("Produto com defeito · Pedido: 123456 · Problema: Chegou quebrado ou amassado"
+                + " · Foto: enviada · Prefere: Trocar por um novo", gravada.getAssunto().orElseThrow());
+        assertEquals(true, gravada.getContexto().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Pergunta da base resolvida: a conversa termina com o Tino e a próxima mensagem abre outra")
+    void resolvidaPeloTino() {
+        escrever("oi");
+        escrever("sim");
+        escrever("Qual o prazo para troca?");
+
+        ConversaDoCliente fim = escrever("Sim, resolveu");
+
+        assertEquals("ENCERRADA", fim.situacao());
+        assertEquals(true, repositorio.conversas().get(0).resolvidaPeloBot());
+        ConversaDoCliente nova = escrever("oi de novo");
+        assertEquals(2, repositorio.conversas().size());
+        assertEquals("COM_BOT", nova.situacao());
     }
 
     @Test
@@ -92,7 +131,7 @@ class CanalDoClienteServiceTest {
     void botQuietoComHumano() {
         escrever("oi");
         escrever("sim");
-        escrever("Meu pedido chegou quebrado");
+        escrever("quero falar com um atendente");
         Conversa conversa = repositorio.conversas().get(0);
         Atendente bruno = new Atendente(1L, "Bruno Dias", "bruno@wxn.com.br", PerfilAtendente.ATENDENTE);
         bruno.entrarEmServico();

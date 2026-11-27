@@ -12,7 +12,7 @@
 | `Pessoa` | abstrata | Base de Cliente e Atendente: identidade, nome, data de cadastro |
 | `Cliente` | entidade | Quem fala com o Tino pelo WhatsApp. Guarda telefone, tipo e consentimento |
 | `Atendente` | entidade | Quem assume os casos escalonados. Tem perfil e disponibilidade |
-| `Chatbot` | classe de domínio | O Tino. Busca na base e decide entre responder e escalonar. Ainda não é gravado no banco: a base vive em memória |
+| `Chatbot` | classe de domínio | O Tino. Busca na base, conduz os fluxos guiados e decide entre responder, conduzir e escalonar. Ainda não é gravado no banco: a base e os fluxos vivem em memória |
 | `Conversa` | entidade (agregado) | Dona das mensagens e da máquina de estados |
 | `Mensagem` | entidade imutável | Uma fala dentro de uma conversa |
 | `Ticket` | entidade | O atendimento humano aberto no escalonamento |
@@ -23,6 +23,14 @@
 | `Relogio` | utilitário do domínio | Fonte única de "agora", no fuso de Recife. As entidades leem a hora daqui; nos testes, um relógio fixo deixa os carimbos de tempo previsíveis |
 | `Remetente` | interface | Contrato de quem pode enviar mensagem |
 | `TipoRemetente`, `TipoCliente`, `PerfilAtendente`, `EstadoConversa`, `MotivoEscalonamento`, `StatusTicket` | enums | Conjuntos fechados de valores, alguns com comportamento |
+| `Fluxo` | classe de domínio | Um atendimento guiado sobre um assunto: como reconhecê-lo, as etapas e o que entra no resumo do atendente |
+| `Etapa` | abstrata | Um passo de um fluxo: a pergunta e como ler a resposta |
+| `EtapaDeEscolha`, `EtapaDeTexto`, `EtapaDeFoto` | classes de domínio | Os três jeitos de ler uma resposta: uma opção, um texto (com formato opcional) e uma foto |
+| `Opcao` | objeto de valor | Uma resposta pronta, que vira botão, e para onde ela leva |
+| `Transicao` | objeto de valor | O que vem depois de uma resposta: outra etapa, outro fluxo, repetir, concluir, encerrar ou passar para um atendente |
+| `ContextoDoFluxo` | objeto de valor | Onde a conversa está num fluxo: fluxo, etapa, dados coletados e tentativas. Vai para o banco como JSON |
+| `ContextoDoFluxoConverter` | conversor do JPA | Grava o contexto como JSON na coluna `conversa.contexto` e o lê de volta |
+| `Linguagem` | utilitário do domínio | Como o Tino lê o que o cliente escreve: sem acento, sem pontuação, palavra por palavra |
 
 ---
 
@@ -70,9 +78,67 @@ classDiagram
         -String nome
         -double limiteConfianca
         -List~ArtigoConhecimento~ baseDeConhecimento
+        -Map~String,Fluxo~ fluxos
         +publicarArtigo(ArtigoConhecimento, Atendente)
+        +publicarFluxo(Fluxo, Atendente)
+        +validarFluxos()
         +melhorResposta(String, TipoCliente) Optional~RespostaCandidata~
+        +melhorFluxo(String) Optional~Fluxo~
         +atender(Conversa, String) Mensagem
+        +opcoesAtuais(Conversa) List~String~
+    }
+
+    class Fluxo {
+        -String id
+        -String assunto
+        -List~String~ gatilhos
+        -List~String~ palavrasChave
+        +pontuarPara(String) double
+        +getEtapaInicial() Etapa
+        +resumir(Map) String
+    }
+
+    class Etapa {
+        <<abstract>>
+        -String id
+        -String pergunta
+        +responder(String, Map)* Transicao
+        +getDestinos()* List~Transicao~
+        +getOpcoes() List~String~
+        +pularSeJaRespondida(Map) Optional~Transicao~
+    }
+
+    class EtapaDeEscolha {
+        -String chave
+        -List~Opcao~ opcoes
+    }
+
+    class EtapaDeTexto {
+        -String chave
+        -Pattern formato
+    }
+
+    class EtapaDeFoto {
+        -String chave
+    }
+
+    class Opcao {
+        -String rotulo
+        -List~String~ sinonimos
+    }
+
+    class Transicao {
+        -Tipo tipo
+        -String alvo
+        -String texto
+    }
+
+    class ContextoDoFluxo {
+        -String fluxo
+        -String etapa
+        -Map~String,String~ dados
+        -int tentativas
+        +comMaisUmaTentativa() ContextoDoFluxo
     }
 
     class Conversa {
@@ -80,6 +146,8 @@ classDiagram
         -List~Mensagem~ mensagens
         -EstadoConversa estado
         -int tentativasSemSucesso
+        -ContextoDoFluxo contexto
+        -String assunto
         +registrarMensagem(Remetente, String) Mensagem
         +liberarAposConsentimento()
         +escalonar(MotivoEscalonamento) Ticket
@@ -153,15 +221,23 @@ classDiagram
     Mensagem "*" --> "1" Remetente
     Chatbot "1" o-- "*" ArtigoConhecimento
     RespostaCandidata "1" --> "1" ArtigoConhecimento
+    Chatbot "1" o-- "*" Fluxo
+    Fluxo "1" *-- "1..*" Etapa
+    Etapa <|-- EtapaDeEscolha
+    Etapa <|-- EtapaDeTexto
+    Etapa <|-- EtapaDeFoto
+    EtapaDeEscolha "1" *-- "2..*" Opcao
+    Opcao "1" --> "1" Transicao
+    Conversa "1" *-- "0..1" ContextoDoFluxo
 ```
 
 ---
 
 ### O que vai para o banco
 
-Das 19 classes, 7 são gravadas no banco: `Cliente`, `Atendente`, `Conversa`, `Mensagem`, `Ticket` e `Transferencia` (`@Entity`) e `Consentimento` (`@Embeddable`, na tabela `consentimento`). `Pessoa` é `@MappedSuperclass`: os campos dela vão para as tabelas de cliente e atendente. `Chatbot`, `ArtigoConhecimento` e `RespostaCandidata` vivem em memória.
+Das 29 classes, interfaces e enums do domínio, 7 são gravadas no banco: `Cliente`, `Atendente`, `Conversa`, `Mensagem`, `Ticket` e `Transferencia` (`@Entity`) e `Consentimento` (`@Embeddable`, na tabela `consentimento`). `Pessoa` é `@MappedSuperclass`: os campos dela vão para as tabelas de cliente e atendente. `ContextoDoFluxo` vai junto com a conversa, como JSON na coluna `conversa.contexto`, pelo `ContextoDoFluxoConverter`. `Chatbot`, `ArtigoConhecimento`, `RespostaCandidata` e os fluxos (`Fluxo`, as etapas, `Opcao` e `Transicao`) vivem em memória.
 
-Conferido contra o código em 17/11/2026: todo atributo e método do diagrama existe na classe correspondente.
+Conferido contra o código em 17/11/2026, e de novo em 27/11/2026, depois do atendimento guiado: todo atributo e método do diagrama existe na classe correspondente.
 
 ## 3. Relacionamentos e cardinalidade
 
@@ -177,6 +253,10 @@ Conferido contra o código em 17/11/2026: todo atributo e método do diagrama ex
 | Mensagem → Remetente | N para 1 | associação **polimórfica** | O autor pode ser Cliente, Chatbot ou Atendente |
 | Chatbot → ArtigoConhecimento | 1 para N | **agregação** | O artigo existe no banco independente do bot |
 | Pessoa → Cliente / Atendente | — | **herança** | Ambos são pessoas com identidade e nome |
+| Chatbot → Fluxo | 1 para N | **agregação** | Os fluxos são conteúdo da WXN, publicados por um gestor, como os artigos |
+| Fluxo → Etapa | 1 para 1..N | **composição** | Uma etapa só faz sentido dentro do seu fluxo |
+| Etapa → EtapaDeEscolha / EtapaDeTexto / EtapaDeFoto | — | **herança** | Três jeitos de ler a resposta, com o mesmo contrato |
+| Conversa → ContextoDoFluxo | 1 para 0..1 | **composição** | O estado de trabalho só existe dentro da conversa e some quando o caso vai para um atendente |
 
 ---
 
@@ -184,13 +264,13 @@ Conferido contra o código em 17/11/2026: todo atributo e método do diagrama ex
 
 | Conceito | Onde está no código |
 |---|---|
-| **Abstração** | `Pessoa` é abstrata e declara `getIdentificacao()` sem implementar |
-| **Herança** | `Cliente extends Pessoa`, `Atendente extends Pessoa` |
+| **Abstração** | `Pessoa` é abstrata e declara `getIdentificacao()` sem implementar. `Etapa` é abstrata e declara `responder()` e `getDestinos()` |
+| **Herança** | `Cliente extends Pessoa`, `Atendente extends Pessoa`; `EtapaDeEscolha`, `EtapaDeTexto` e `EtapaDeFoto extends Etapa` |
 | **Interface** | `Remetente`, implementada por três classes de hierarquias diferentes |
-| **Polimorfismo** | `Mensagem` guarda um `Remetente`; cada tipo se identifica à sua maneira — cliente pelo telefone mascarado, atendente pelo perfil e nome, bot por nome e versão |
+| **Polimorfismo** | `Mensagem` guarda um `Remetente`; cada tipo se identifica à sua maneira — cliente pelo telefone mascarado, atendente pelo perfil e nome, bot por nome e versão. O `Chatbot` conduz qualquer `Etapa` pelo mesmo contrato, e cada tipo lê a resposta do seu jeito: uma escolha, um texto, uma foto |
 | **Encapsulamento** | Todos os atributos são `private`. Coleções saem por `Collections.unmodifiableList` ou `List.copyOf` |
 | **Encapsulamento de criação** | Construtores de `Mensagem` e `Ticket` têm visibilidade de pacote: só `Conversa` os cria. O de `Transferencia` também: só `Ticket` a cria, depois de validar as regras |
-| **Imutabilidade** | `RespostaCandidata` é `final`, com campos `final`. `Mensagem` e `Consentimento` não podem ser `final` porque o JPA precisa instanciá-las por reflexão; nelas a imutabilidade vem da ausência de setters |
+| **Imutabilidade** | `RespostaCandidata`, `ContextoDoFluxo`, `Transicao`, `Opcao` e `Fluxo` são `final`, com campos `final`: cada passo de um fluxo cria um contexto novo. `Mensagem` e `Consentimento` não podem ser `final` porque o JPA precisa instanciá-las por reflexão; nelas a imutabilidade vem da ausência de setters |
 | **Validação no construtor** | Nome vazio, telefone curto, e-mail malformado e confiança fora de 0–1 lançam `IllegalArgumentException` |
 | **Invariantes de estado** | Transições inválidas lançam `IllegalStateException` — conversa encerrada não aceita mensagem, ticket encerrado não é assumido, atendente fora de serviço não assume caso, caso que não está em atendimento não é transferido |
 | **Enum com comportamento** | `EstadoConversa.aceitaNovaMensagem()`, `PerfilAtendente.gerenciaBaseDeConhecimento()` |
@@ -222,6 +302,8 @@ return conversa.registrarMensagem(this, TEXTO_FALLBACK);
 
 Abaixo do limite de confiança não existe caminho no código que devolva conteúdo da base. O fallback é estrutural, não uma recomendação de comportamento.
 
+Com o atendimento guiado, o Tino também conduz o cliente pelos fluxos, mas a regra continua: ele só diz o que está escrito num artigo ou num fluxo. O que ele não reconhece abre o menu de assuntos, e depois de três respostas seguidas que não servem o caso vai para uma pessoa. Os detalhes estão em [fluxos-guiados.md](fluxos-guiados.md).
+
 ---
 
 ## 6. Divisão do trabalho
@@ -231,6 +313,7 @@ Abaixo do limite de confiança não existe caminho no código que devolva conte�
 | Atores | `Pessoa`, `Cliente`, `Atendente`, `Consentimento`, `TipoCliente`, `PerfilAtendente` | `dominio-pessoas` |
 | Mensagens e base de conhecimento | `Mensagem`, `ArtigoConhecimento`, `RespostaCandidata`, `TipoRemetente`, `MotivoEscalonamento`, `StatusTicket` | `mensagens-base-conhecimento` |
 | Núcleo e integração | `Remetente`, `EstadoConversa`, `Conversa`, `Ticket`, `Chatbot`, testes | `main` |
+| Atendimento guiado | `Fluxo`, `Etapa` e as três etapas, `Opcao`, `Transicao`, `ContextoDoFluxo`, `ContextoDoFluxoConverter`, `Linguagem` | `semana-17/fluxos-guiados` |
 
 ---
 
@@ -246,5 +329,7 @@ BUILD SUCCESS
 ```
 
 Os 21 testes cobrem: autorização do gestor, cliente criado a partir do WhatsApp sem e-mail, exigência de consentimento, registro e revogação do aceite, resposta pela base, fallback com escalonamento, handoff preservando histórico, recusa de atendente fora de serviço, encerramento do ticket, bloqueio de mensagem em conversa encerrada, coleção somente leitura, isolamento de artigo interno, artigo desativado, atualização da base pelo gestor, escolha do artigo de maior confiança, mascaramento de telefone, validação de dados inválidos, o fluxo completo do consentimento, a recusa do turno quando a conversa está com um humano e o bloqueio de reabertura de conversa encerrada.
+
+O atendimento guiado tem os próprios testes, em `FluxoGuiadoTest` (25), descritos em [fluxos-guiados.md](fluxos-guiados.md).
 
 Os 11 de `TransferenciaTest` cobrem a transferência: o caso muda de mãos e continua em atendimento, o tempo de espera não é zerado, o gestor transfere caso de outro e fica registrado como autor, atendente comum não transfere caso alheio, ticket na fila ou encerrado é recusado, destino igual ao atual ou fora de serviço é recusado, motivo obrigatório com até 280 caracteres, e transferências em sequência. As regras estão em [transferencia.md](transferencia.md).
