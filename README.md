@@ -73,14 +73,17 @@ Abra **http://localhost:5500/index.html** no navegador.
 
 Do cliente ao atendente que recebe a transferência, com um caso criado na hora:
 
-1. **O cliente escreve.** Abra **http://localhost:5500/simulador.html**, que faz
-   o papel do WhatsApp. Clique em **Outro número** (cada número é um cliente
-   novo) e use os botões de sugestão: **Oi**, depois **Sim** para aceitar o aviso
-   de privacidade, depois **Qual o prazo para troca?**, que o Tino responde pela
-   base. Por fim, **Meu pedido chegou quebrado**: o Tino não sabe responder e
-   passa o caso para um atendente.
+1. **O cliente escreve e o Tino conduz.** Abra **http://localhost:5500/simulador.html**,
+   que faz o papel do WhatsApp. Clique em **Outro número** (cada número é um
+   cliente novo) e responda pelos botões, que são as opções que o Tino oferece:
+   **Oi**, **Sim** para aceitar o aviso de privacidade e, no menu, **Produto com
+   defeito**. Digite um número de pedido (por exemplo `123456`), escolha o que
+   aconteceu, envie uma foto (qualquer imagem do computador) ou toque em **Não
+   consigo enviar agora**, escolha entre troca e reembolso e, depois da
+   explicação de como devolver, **Sim, pode abrir**. O Tino passa o caso para um
+   atendente com um resumo.
 2. **O caso entra na fila.** Em outra aba, abra **http://localhost:5500/index.html**.
-   O caso aparece em **Aguardando**, com a última fala do cliente.
+   O caso aparece em **Aguardando**, com o resumo do Tino.
 3. **A fila e o assumir (primeira história).** Em **Atendendo como**, escolha
    **Bruno Dias** e clique em **Assumir** nesse caso. Ele passa para **Meus
    casos**, e o simulador do cliente mostra "Em atendimento com Bruno Dias".
@@ -95,6 +98,13 @@ Do cliente ao atendente que recebe a transferência, com um caso criado na hora:
 Sem o simulador, dá para começar pelos casos de exemplo: o `••• 6650` já está
 com o Bruno, transferido pela Ana, e os casos em **Aguardando** podem ser
 assumidos.
+
+O menu do Tino tem outros atendimentos guiados para experimentar: acompanhar
+um pedido, trocar um produto, cancelar uma compra e pagamento. Também dá para
+escrever do seu jeito ("meu pedido está atrasado", "fui cobrado duas vezes"),
+pedir um atendente a qualquer momento ou fazer uma pergunta da base, como
+**Qual o prazo para troca?**. Os fluxos estão descritos em
+[docs/fluxos-guiados.md](docs/fluxos-guiados.md).
 
 ### Voltar ao estado inicial
 
@@ -133,7 +143,7 @@ começar do zero: pare o back-end com **Ctrl + C** e apague a pasta `data/`.
 | `POST /api/fila/{ticketId}/transferir` | Passa um caso em atendimento a outro atendente. Corpo `{"quemTransfereId", "destinoId", "motivo"}`. Mesmos códigos de erro; regras em [docs/transferencia.md](docs/transferencia.md) |
 | `GET /api/fila/{ticketId}/conversa` | A conversa de um caso, com o histórico completo e as transferências, para a Tela 7 |
 | `GET /api/atendentes` | A equipe que pode assumir casos, em ordem alfabética |
-| `POST /api/simulador/mensagens` | Uma mensagem do cliente e a resposta do Tino. Corpo `{"telefone", "nome", "texto"}`. É a mesma porta de entrada que o WhatsApp vai usar |
+| `POST /api/simulador/mensagens` | Uma mensagem do cliente e a resposta do Tino. Corpo `{"telefone", "nome", "texto"}`. A resposta traz `opcoes`, as respostas prontas da pergunta do Tino, que viram botões. É a mesma porta de entrada que o WhatsApp vai usar |
 | `GET /api/simulador/conversa?telefone={telefone}` | A conversa em andamento de um telefone, como o cliente a vê |
 | `/h2-console` | Console do banco. JDBC URL `jdbc:h2:file:./data/chatbotdb`, usuário `sa`, senha vazia |
 

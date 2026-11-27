@@ -156,13 +156,15 @@
   from { opacity: 0; transform: translateY(4px); }
 }
 
+/* As respostas prontas do Tino: todas a vista, quebrando linha, como os botoes do WhatsApp. */
 .celular-sugestoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   padding: 0.6rem 1rem 0;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
+
+.balao-texto { white-space: pre-line; }
 
 .sugestao {
   flex: none;

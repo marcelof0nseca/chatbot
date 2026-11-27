@@ -40,14 +40,16 @@ class SimuladorApiTest {
         given(canal.receberMensagem("5581955550001", "Fernanda", "oi")).willReturn(new ConversaDoCliente(
                 7L, "AGUARDANDO_CONSENTIMENTO", null, null, List.of(
                         new MensagemDoHistorico("CLIENTE", "*********0001", "oi", agora),
-                        new MensagemDoHistorico("CHATBOT", "Tino", "Olá!", agora))));
+                        new MensagemDoHistorico("CHATBOT", "Tino", "Olá!", agora)),
+                List.of("Sim", "Não")));
 
         http.perform(post("/api/simulador/mensagens").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"5581955550001\",\"nome\":\"Fernanda\",\"texto\":\"oi\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.situacao").value("AGUARDANDO_CONSENTIMENTO"))
                 .andExpect(jsonPath("$.mensagens[1].autor").value("CHATBOT"))
-                .andExpect(jsonPath("$.mensagens[1].conteudo").value("Olá!"));
+                .andExpect(jsonPath("$.mensagens[1].conteudo").value("Olá!"))
+                .andExpect(jsonPath("$.opcoes[0]").value("Sim"));
     }
 
     @Test

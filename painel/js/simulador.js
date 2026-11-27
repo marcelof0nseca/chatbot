@@ -4,12 +4,11 @@
 import { API, ErroDaApi, el, hora } from "./api.js";
 
 /** Perguntas sugeridas. A base de exemplo responde as tres primeiras (TinoConfigTest). */
-const SUGESTOES = [
-  "Qual o prazo para troca?",
-  "Como acompanho meu pedido?",
-  "Quais as formas de pagamento?",
-  "Meu pedido chegou quebrado",
-];
+/** A opcao que, em vez de mandar o texto, abre a escolha de uma imagem. */
+const ENVIAR_FOTO = "Enviar foto";
+
+/** Como a foto chega ao Tino: o WhatsApp vai mandar a imagem; aqui vai a marcacao com o nome do arquivo. */
+const MARCA_DE_FOTO = "[Foto]";
 
 /** Enquanto a conversa esta aberta, a pagina confere se um atendente assumiu. */
 const INTERVALO_DE_ATUALIZACAO = 4000;
@@ -111,18 +110,37 @@ function desenhar(conversa) {
   desenharSugestoes(conversa);
 }
 
+/**
+ * Os botoes sao as respostas prontas que o Tino acabou de oferecer, como o
+ * WhatsApp mostra numa mensagem interativa. Numa pergunta aberta (o numero do
+ * pedido) nao ha botoes: o cliente digita. Conversa encerrada recomeca com um "Oi".
+ */
 function desenharSugestoes(conversa) {
-  const estado = conversa ? conversa.situacao : null;
   let opcoes = [];
-  if (!conversa) opcoes = ["Oi"];
-  else if (estado === "AGUARDANDO_CONSENTIMENTO") opcoes = ["Sim", "Não"];
-  else if (estado === "COM_BOT") opcoes = SUGESTOES;
+  if (!conversa || conversa.situacao === "ENCERRADA") opcoes = ["Oi"];
+  else opcoes = conversa.opcoes ?? [];
   $sugestoes.hidden = opcoes.length === 0;
   $sugestoes.replaceChildren(
     ...opcoes.map((texto) =>
-      el("button", { class: "sugestao", type: "button", onclick: () => enviar(texto) }, texto),
+      el(
+        "button",
+        { class: "sugestao", type: "button", onclick: () => (texto === ENVIAR_FOTO ? escolherFoto() : enviar(texto)) },
+        texto,
+      ),
     ),
   );
+}
+
+/** Abre a escolha de uma imagem e manda a marcacao de foto com o nome do arquivo. */
+function escolherFoto() {
+  const seletor = el("input", { type: "file", accept: "image/*", hidden: true });
+  seletor.addEventListener("change", () => {
+    const arquivo = seletor.files && seletor.files[0];
+    seletor.remove();
+    if (arquivo) enviar(`${MARCA_DE_FOTO} ${arquivo.name}`);
+  });
+  document.body.append(seletor);
+  seletor.click();
 }
 
 function erroNaConversa(erro) {

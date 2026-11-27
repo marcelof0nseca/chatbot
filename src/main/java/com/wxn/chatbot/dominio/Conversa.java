@@ -11,6 +11,7 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -67,6 +68,17 @@ public class Conversa {
     @JdbcTypeCode(SqlTypes.SMALLINT)
     @Column(name = "tentativas_sem_sucesso", nullable = false)
     private int tentativasSemSucesso;
+
+    /** Onde a conversa esta num fluxo guiado. Nulo fora de um fluxo. */
+    @Convert(converter = ContextoDoFluxoConverter.class)
+    @Column(name = "contexto", length = 8000)
+    private ContextoDoFluxo contexto;
+
+    /** O resumo que o Tino montou ao passar o caso: vira a previa na fila. */
+    @Column(name = "assunto", length = TAMANHO_DO_ASSUNTO)
+    private String assunto;
+
+    static final int TAMANHO_DO_ASSUNTO = 300;
 
     protected Conversa() {
         // Necessário para o JPA.
@@ -125,6 +137,8 @@ public class Conversa {
         if (ticket != null) {
             return ticket;
         }
+        // Com um humano, o estado de trabalho do bot deixa de valer.
+        this.contexto = null;
         this.ticket = new Ticket(idTicket, this, motivo);
         this.estado = EstadoConversa.AGUARDANDO_ATENDENTE;
         return ticket;
@@ -148,6 +162,41 @@ public class Conversa {
         }
         this.estado = EstadoConversa.ENCERRADA;
         this.encerradaEm = Relogio.agora();
+        this.contexto = null;
+    }
+
+    /** Visibilidade de pacote: so o Chatbot conduz a conversa pelos fluxos. */
+    void seguirFluxo(ContextoDoFluxo novo) {
+        if (novo == null) {
+            throw new IllegalArgumentException("O contexto é obrigatório.");
+        }
+        if (!estado.botResponde()) {
+            throw new IllegalStateException("Só a conversa com o bot segue um fluxo guiado.");
+        }
+        this.contexto = novo;
+    }
+
+    void sairDoFluxo() {
+        this.contexto = null;
+    }
+
+    void definirAssunto(String resumo) {
+        if (resumo == null || resumo.isBlank()) {
+            this.assunto = null;
+            return;
+        }
+        String limpo = resumo.strip();
+        this.assunto = limpo.length() <= TAMANHO_DO_ASSUNTO
+                ? limpo
+                : limpo.substring(0, TAMANHO_DO_ASSUNTO - 1).strip() + "…";
+    }
+
+    public Optional<ContextoDoFluxo> getContexto() {
+        return Optional.ofNullable(contexto);
+    }
+
+    public Optional<String> getAssunto() {
+        return Optional.ofNullable(assunto);
     }
 
     public void registrarTentativaSemSucesso() {

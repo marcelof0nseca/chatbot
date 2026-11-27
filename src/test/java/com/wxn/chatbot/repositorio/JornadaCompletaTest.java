@@ -26,8 +26,8 @@ import jakarta.persistence.EntityManager;
 
 /**
  * As duas historias seguidas, contra o banco: o cliente escreve, o Tino
- * escala, o caso entra na fila, e assumido, transferido, e quem recebe ve o
- * historico inteiro. Cada passo limpa o contexto do JPA, como se fosse uma
+ * conduz e escala, o caso entra na fila, e assumido, transferido, e quem
+ * recebe ve o historico inteiro. Cada passo limpa o contexto do JPA, como se fosse uma
  * requisicao separada.
  */
 @SpringBootTest(properties = {
@@ -61,20 +61,27 @@ class JornadaCompletaTest {
     @Test
     @DisplayName("Do cliente ao atendente que recebe a transferência, com o histórico inteiro")
     void jornada() {
-        // O cliente fala com o Tino: aviso, aceite, uma resposta da base e um escalonamento.
+        // O cliente fala com o Tino: aviso, aceite e o atendimento guiado do
+        // produto com defeito, que guarda o contexto no banco entre uma
+        // mensagem e outra e termina passando o caso com um resumo.
         assertEquals("AGUARDANDO_CONSENTIMENTO", escrever("oi").situacao());
         assertEquals("COM_BOT", escrever("sim").situacao());
-        escrever("Qual o prazo para troca?");
-        ConversaDoCliente escalada = escrever("Meu pedido chegou quebrado");
+        escrever("Meu pedido chegou quebrado");
+        escrever("123456");
+        escrever("Chegou quebrado ou amassado");
+        escrever("Não consigo enviar agora");
+        escrever("Receber o dinheiro de volta");
+        ConversaDoCliente escalada = escrever("Sim, pode abrir");
         assertEquals("AGUARDANDO_ATENDENTE", escalada.situacao());
         Long ticketId = escalada.ticketId();
         assertNotNull(ticketId);
 
-        // Primeira historia: o caso esta na fila e e assumido.
+        // Primeira historia: o caso esta na fila, com o resumo do Tino, e e assumido.
         ItemDaFila naFila = fila.listarFila().stream()
                 .filter(item -> item.ticketId().equals(ticketId)).findFirst().orElseThrow();
         assertEquals(StatusTicket.ABERTO, naFila.status());
-        assertEquals("Meu pedido chegou quebrado", naFila.ultimaMensagem());
+        assertTrue(naFila.ultimaMensagem().startsWith("Produto com defeito · Pedido: 123456"),
+                naFila.ultimaMensagem());
         fila.assumir(ticketId, 1001L);
         em.flush();
         em.clear();
